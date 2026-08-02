@@ -237,7 +237,7 @@ export default function LoreweaverDashboard() {
           </div>
         ) : (
           /* ------------------------- Command Dashboard ------------------------- */
-          <div className="flex flex-col w-full h-full">
+          <div className="flex flex-col lg:flex-row w-full min-h-[calc(100vh-4rem)] bg-slate-950 text-slate-100 pb-20 lg:pb-0">
             <div className="flex flex-wrap justify-between items-start gap-6 mb-8 pb-6 border-b border-slate-800">
               <div>
                 <button

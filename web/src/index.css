@@ -1,4 +1,6 @@
 /* Global Styles & Variables */
+@import "tailwindcss";
+
 :root {
   --bg-primary: #130924;
   --bg-panel: #1c0f35;
