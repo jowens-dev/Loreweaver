@@ -16,3 +16,4 @@ scripts/oracle-cards.json
 data/collection_tagged.csv
 data/collection_tagged_bulk.csv
 data/32_deck_matrix.csv
+.vercel
