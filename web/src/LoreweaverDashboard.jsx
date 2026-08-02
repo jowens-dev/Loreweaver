@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Flame, X, Check, Feather, ChevronLeft } from 'lucide-react';
 
-const RECOMMENDATION_API_URL = 'http://localhost:8000/api/recommendations';
+const RECOMMENDATION_API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/recommendations`;
 const FALLBACK_CARD_BACK = 'https://cards.scryfall.io/back.jpg';
 
 const PIP_STYLES = {
