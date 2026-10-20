@@ -1,98 +1,237 @@
 # Loreweaver
 
-**Loreweaver** is a thematic deck companion and analysis tool for Magic: The Gathering (MTG). This workspace contains a pipeline and dashboard for analyzing mechanical synergy, thematic cohesion, color identities, and card selection workflows.
+Loreweaver is an intelligent deck analysis and thematic companion for Magic: The Gathering (MTG) Commander format. It evaluates decks based on mechanical synergy, thematic cohesion, mana curve efficiency, and operational resource chains.
 
-## Files
+---
 
-- scripts/tag_color_identity.py: adds a Color Identity column by joining your inventory against a local Scryfall SQLite database.
-- tests/test_tag_color_identity.py: smoke tests for the small helper functions in the tagging script.
+## Architecture overview
 
-## Usage
+Loreweaver consists of three primary components:
 
-```bash
-python3 scripts/tag_color_identity.py /path/to/mtg_canonical_inventory.csv /path/to/scryfall_cards.db --output /path/to/mtg_canonical_inventory_tagged.csv
+1. **Frontend single-page application (SPA):** Built with React 19, Vite, and Tailwind CSS. Provides decklist importing, bracket analysis (Casual Play / Game Changers), mana curve distributions, broken chain detection, and flavor spice recommendations. Hosted on Vercel at [lore-weaver.app](https://lore-weaver.app).
+2. **Backend API service:** Built with FastAPI and Uvicorn. Exposes health monitoring, commander-filtered card pools, and categorized recommendation swimlanes.
+3. **Card database:** A high-performance, indexed SQLite database (`data/cards.db`, ~18.6 MB). Replaces multi-gigabyte in-memory JSON representations, enabling execution within strict server memory envelopes (<20 MB RAM footprint).
+
+```
+                      +-----------------------------+
+                      |     Client Web Browser      |
+                      |   (https://lore-weaver.app) |
+                      +--------------+--------------+
+                                     |
+              +----------------------+----------------------+
+              |                                             |
+              v (Direct Scryfall API)                       v (REST / CORS)
+    +-------------------+                         +-------------------+
+    |   api.scryfall    |                         |   FastAPI Service |
+    | (Card Images/DFC) |                         | (api.lore-weaver) |
+    +-------------------+                         +---------+---------+
+                                                            |
+                                                            v
+                                                  +-------------------+
+                                                  |   SQLite Database |
+                                                  |   (data/cards.db) |
+                                                  +-------------------+
 ```
 
-The script expects the inventory CSV to contain a card-name column such as `Card Name` or `card_name`.
+---
 
-Loreweaver - Dependency Map
+## Prerequisites
 
-Core Philosophy: This is NOT an EDHREC clone. This app analyzes the flavor, theme, and mechanical synergy of a deck, not just raw play-rates.
+Before running Loreweaver locally, ensure you have installed:
 
-🧠 AI Dispatch Protocol (Token Management)
+- **Python 3.10+** (with [`uv`](https://docs.astral.sh/uv/) recommended for fast environment management)
+- **Node.js 18+** and **npm**
 
-Never burn heavy tokens on light work. Never ask a light model for heavy architecture.
+---
 
-The Heavyweights (Claude 3.5 Sonnet / GPT-4o): * Use for: System architecture, writing complex algorithms (like the Theme Cohesion Score), generating large boilerplate from scratch, and debugging massive traceback errors.
+## Get started
 
-Limit: Strict token budgets. Only feed them exactly the code they need (e.g., just the load_oracle_database function, not the whole file).
+### 1. Ingest card database
 
-The Local Sandbox (Praxis 3B):
+Loreweaver queries an indexed SQLite database rather than loading raw JSON files into memory.
 
-Use for: Rubber-ducking, quick syntax checks, running 10-line Python sandboxes, and keeping you on task when you get distracted.
+To generate or refresh `data/cards.db`, run:
 
-Limit: Zero token cost, but extremely low context. Never give it more than 50 lines of code at a time.
+```bash
+uv run python3 scripts/ingest.py
+```
 
-The Copilot (Cursor/GitHub Copilot):
+If `scripts/oracle-cards.json` does not exist locally, the ingestion script automatically downloads the latest Oracle bulk card dump from Scryfall.
 
-Use for: Line-by-line autocomplete and writing docstrings.
+The ingestion script:
+- Filters out non-tournament objects (tokens, emblems, art series).
+- Normalizes double-faced card (DFC) faces and aliases into a unified searchable schema.
+- Indexes names, color identities, mana values, and EDHREC ranks.
 
-Layer 1: The Oracle (Data Foundation)
+### 2. Run the backend API
 
-You cannot analyze cards if you don't know what they do.
+Start the FastAPI development server:
 
-[x] Acquire Raw Data: Download bulk Scryfall Oracle JSON.
+```bash
+uv run uvicorn api:app --reload --port 8000
+```
 
-[x] Base Ingestion: Script to load oracle-cards.json into Python memory.
+Verify that the backend is running by requesting the health check endpoint:
 
-[x] Base Extraction: Extract name and mana_cost.
+```bash
+curl http://localhost:8000/health
+```
 
-[ ] CURRENT BOTTLENECK -> Thematic Extraction: Extract type_line (Legendary, Creature types), oracle_text (mechanics), and colors. (Sandbox verified, needs integration).
+Expected response:
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "total_cards": 34149
+}
+```
 
-[ ] Flavor Extraction: Extract flavor_text and art_tags (if available via Scryfall APIs/bulk).
+### 3. Run the frontend development server
 
-Layer 2: The Ingestion Engine (User Input)
+In a separate terminal, navigate to the `web/` directory and install dependencies:
 
-You cannot analyze a deck if you can't read the user's list.
+```bash
+cd web
+npm install
+npm run dev
+```
 
-[x] Regex/Splitter: Parse standard decklist strings (quantities + names).
+Open `http://localhost:5173` in your browser. The application automatically communicates with your local backend at `http://localhost:8000`.
 
-[x] Quantity Aggregator: Multiply card objects by their deck quantity.
+---
 
-[x] DB Matcher: Safely map parsed text names to the loaded Oracle DB.
+## API reference
 
-Layer 3: The Tactical Baseline (Stats)
+### `GET /health`
 
-You need a functional deck before you can make it flavorful.
+Returns service health status and card database availability.
 
-[x] Mana Value Calculator: Convert {2}{U}{U} to 4.
+#### Response
 
-[x] Color Mapping: Map Scryfall color arrays to UI hex codes.
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "total_cards": 34149
+}
+```
 
-[x] Curve UI: Render a stacked bar chart of the mana curve.
+---
 
-[ ] Cost Modifiers: Engine to dynamically alter MV (e.g., Blasphemous Act = 1). (Optional/Low Priority for MVP).
+### `GET /api/recommendations`
 
-Layer 4: The Thematic Engine (The Core USP)
+Returns categorized card recommendation swimlanes matching a commander's color identity and spice parameter.
 
-This is the heart of the app. It relies entirely on Layer 1 being finished.
+#### Parameters
 
-[ ] Type Clustering: Group the deck by supertypes (Legendary) and subtypes (Vampire, Knight, Equipment).
+| Parameter | Type | Required | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `commander` | string | Optional | `""` | Name of the commander (for example, `Belbe, Corrupted Observer`). |
+| `spice` | integer | Optional | `50` | Flavor spice level (`0` = Format Staples, `50` = Balanced, `100` = Deep Cuts). |
 
-[ ] Mechanical Keyword Scanner: Scan oracle_text for recurring themes (e.g., "sacrifice", "landfall", "historic").
+#### Example request
 
-[ ] Theme Scoring Algorithm: Calculate a "Theme Cohesion Score" based on how many cards share subtypes, keywords, or watermarks.
+```bash
+curl "http://localhost:8000/api/recommendations?commander=Belbe,%20Corrupted%20Observer&spice=75"
+```
 
-[ ] The "Vorthos" Analyzer: Flag cards that mechanically fit but flavorfully clash (e.g., a Cyberpunk Kamigawa card in a Gothic Innistrad vampire deck).
+#### Response structure
 
-Layer 5: The UI & Presentation
+```json
+[
+  {
+    "title": "Ramp Spells",
+    "cards": [
+      {
+        "name": "Incubation Druid",
+        "mana_cost": "{1}{G}",
+        "type_line": "Creature — Elf Druid",
+        "oracle_text": "{T}: Add one mana of any type...",
+        "image_url": "https://cards.scryfall.io/...",
+        "edhrec_rank": 820,
+        "category": "Ramp"
+      }
+    ]
+  },
+  {
+    "title": "Card Advantage",
+    "cards": []
+  },
+  {
+    "title": "Removal & Answers",
+    "cards": []
+  },
+  {
+    "title": "Thematic Synergy",
+    "cards": []
+  },
+  {
+    "title": "Recommended Lands",
+    "cards": []
+  }
+]
+```
 
-Users need to see the thematic data clearly.
+---
 
-[x] Base Application: Tkinter window setup with input/output panes.
+## Testing
 
-[ ] Thematic Dashboard: UI panels to display Top Creature Types, Dominant Keywords, and Cohesion Score.
+### Python test suite
 
-[ ] Visual Filtering: Dropdowns to view the deck by Color, by Type, or by Custom Tag.
+Run the unit and integration tests across the database layer, API endpoints, and analytics engine:
 
-[ ] Export: Ability to save the thematic report to a text file or markdown.
+```bash
+uv run --with pytest --with httpx --with fastapi pytest
+```
+
+### Frontend linting and build verification
+
+Run the linter and production build to verify client code integrity:
+
+```bash
+cd web
+npm run lint
+npm run build
+```
+
+---
+
+## Deployment
+
+### Frontend (Vercel)
+
+The frontend is deployed to Vercel with automatic continuous integration from the `main` branch.
+
+- **Production URL:** [https://lore-weaver.app](https://lore-weaver.app)
+- **Root directory:** `web`
+- **Build command:** `vite build`
+- **Output directory:** `dist`
+
+### Backend (AWS EC2)
+
+The backend service runs on an Amazon Linux EC2 instance (`t3.micro`, `us-east-1`):
+
+- **Host:** `api.lore-weaver.app` (`54.87.157.40`)
+- **Service manager:** `systemd` running `uvicorn api:app --host 0.0.0.0 --port 8000`
+- **Reverse proxy:** Nginx with Let's Encrypt TLS certificate.
+
+To deploy backend updates:
+
+```bash
+ssh -i ~/path/to/key.pem ec2-user@api.lore-weaver.app
+cd Loreweaver
+git pull origin main
+uv run python3 scripts/ingest.py
+sudo systemctl restart loreweaver
+```
+
+---
+
+## Engineering style guidelines
+
+All documentation, APIs, and code additions in this repository follow the [Google Developer Documentation Style Guide](https://developers.google.com/style):
+
+- Use active voice and write in the second person ("you").
+- Maintain sentence case for all section headers.
+- Format all code symbols, endpoints, file paths, and parameter names in code font.
+- Prioritize testability and verify memory bounds (<100 MB RAM) for all backend algorithms.

@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Flame, X, Check, Feather, ChevronLeft } from 'lucide-react';
 
-const RECOMMENDATION_API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/recommendations`;
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  return 'https://api.lore-weaver.app';
+};
+const RECOMMENDATION_API_URL = `${getApiBaseUrl()}/api/recommendations`;
 const FALLBACK_CARD_BACK = 'https://cards.scryfall.io/back.jpg';
 
 const PIP_STYLES = {
@@ -61,14 +68,20 @@ export default function LoreweaverDashboard() {
   const avgCmc = decklist.length ? (decklist.reduce((sum, c) => sum + (Number(c.cmc) || 0), 0) / decklist.length).toFixed(2) : '0.00';
 
   const swimlanes = useMemo(() => {
-    return recommendations.reduce((acc, card) => {
-      const category = card.category || card.lane || card.section || 'Recommendations';
-      if (!acc[category]) {
-        acc[category] = [];
+    if (!Array.isArray(recommendations)) return {};
+    const acc = {};
+    for (const item of recommendations) {
+      if (item && Array.isArray(item.cards)) {
+        const title = item.title || item.name || 'Recommendations';
+        if (!acc[title]) acc[title] = [];
+        acc[title].push(...item.cards);
+      } else if (item) {
+        const category = item.category || item.lane || item.section || 'Recommendations';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(item);
       }
-      acc[category].push(card);
-      return acc;
-    }, {});
+    }
+    return acc;
   }, [recommendations]);
 
   const fetchRecommendations = async (commanderName, spiceValue) => {

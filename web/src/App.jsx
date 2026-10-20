@@ -4,7 +4,14 @@ import { parseDecklistText, calculateCohesionScore, calculateFlavorProfile, anal
 import { analyzeStress } from './utils/stressTester';
 import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInjector';
 import LoreweaverDashboard from './LoreweaverDashboard';
-const RECOMMENDATION_API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/recommendations`;
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:8000';
+  }
+  return 'https://api.lore-weaver.app';
+};
+const RECOMMENDATION_API_URL = `${getApiBaseUrl()}/api/recommendations`;
 const CARD_BACK_FALLBACK = 'https://cards.scryfall.io/back.jpg';
 const RECOMMENDATION_LANE_ORDER = ['lands', 'ramp', 'draw', 'removal', 'synergy', 'utility', 'other'];
 
