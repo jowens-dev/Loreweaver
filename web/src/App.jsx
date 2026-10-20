@@ -176,22 +176,39 @@ function App() {
         });
         if (res.ok) {
           const data = await res.json();
+          const faces = Array.isArray(data.card_faces) ? data.card_faces : [];
+
+          let typeLine = data.type_line || "";
+          if (!typeLine && faces.length > 0) {
+            typeLine = faces.map(f => f.type_line || "").filter(Boolean).join(" // ");
+          }
+
           let types = [];
           let subtypes = [];
-          const typeLine = data.type_line || "";
           if (typeLine) {
-            const parts = typeLine.split("—");
-            types = parts[0].trim().split(" ").map(t => t.toLowerCase());
-            if (parts[1]) {
-              subtypes = parts[1].trim().split(" ").filter(Boolean).map(s => s.toLowerCase());
+            const faceTypeLines = typeLine.split("//");
+            for (const ftl of faceTypeLines) {
+              const parts = ftl.split("—");
+              types.push(...parts[0].trim().split(/\s+/).map(t => t.toLowerCase()));
+              if (parts[1]) {
+                subtypes.push(...parts[1].trim().split(/\s+/).filter(Boolean).map(s => s.toLowerCase()));
+              }
             }
+            types = [...new Set(types)];
+            subtypes = [...new Set(subtypes)];
           }
+
+          let oracleText = data.oracle_text || "";
+          if (!oracleText && faces.length > 0) {
+            oracleText = faces.map(f => f.oracle_text || "").filter(Boolean).join("\n//\n");
+          }
+
           commanderCardInfo = {
             name: data.name,
             raw_type: typeLine,
             types,
             subtypes,
-            oracle_text: data.oracle_text || "",
+            oracle_text: oracleText,
             colors: data.color_identity || []
           };
         }
@@ -727,6 +744,30 @@ function App() {
                   <p style={{ fontSize: '0.9rem', lineHeight: '1.4' }}>
                     Loreweaver identified that your deck supports the <strong>{brokenChains[selectedChainIndex].theme}</strong> theme, but lacks sufficient <strong>{brokenChains[selectedChainIndex].missingType}s</strong> to execute it reliably.
                   </p>
+                  {spiceLoading ? (
+                    <div style={{ marginTop: '12px', fontSize: '0.85rem', color: 'var(--text-accent)' }}>
+                      Searching for non-staple spice suggestions to fix this chain...
+                    </div>
+                  ) : spiceRecommendations.length > 0 ? (
+                    <div style={{ marginTop: '14px' }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-accent)', marginBottom: '8px' }}>
+                        Suggested Cards to Complete This Chain:
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
+                        {spiceRecommendations.map((card, idx) => (
+                          <div key={idx} style={{ padding: '8px 10px', backgroundColor: 'var(--bg-input)', borderRadius: '6px', fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 'bold', color: 'var(--text-white)', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>{card.name}</span>
+                              <span style={{ color: 'var(--text-accent)' }}>{card.mana_cost}</span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-accent)', fontStyle: 'italic', marginTop: '2px' }}>
+                              {card.type_line}{card.edhrec_rank ? ` (Rank #${card.edhrec_rank})` : ''}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="card">

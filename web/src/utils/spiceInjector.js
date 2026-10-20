@@ -31,7 +31,6 @@ export function detectBrokenChains(deckNames, db) {
     if (!card) continue;
 
     const text = card.oracle_text || "";
-    const type = card.raw_type || "";
 
     // 1. Tokens Chain
     if (/create.*token/i.test(text)) {

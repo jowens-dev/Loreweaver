@@ -224,12 +224,6 @@ export function calculateFlavorProfile(deckNames, db) {
   };
 }
 
-const FAST_MANA_LIST = new Set([
-  "mana crypt", "mana vault", "grim monolith", "chrome mox", 
-  "mox opal", "mox diamond", "lotus petal", "jeweled lotus", 
-  "lion's eye diamond", "ancient tomb"
-]);
-
 const FINISHER_REGEX = /win the game|loses the game|extra turn|additional combat phase|craterhoof behemoth|triumph of the hordes|overwhelming stampede|beastmaster ascension|akroma's will|torment of hailfire|insurrection|exquisite blood|thassa's oracle|laboratory maniac/i;
 
 export function analyzeIntentionalExperience(deckNames, db, targetIX, targetBracket) {

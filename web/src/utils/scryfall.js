@@ -46,34 +46,86 @@ export async function fetchCardsMetadata(cardNames) {
         for (const card of data.data) {
           const name = card.name;
           if (!name) continue;
-          
-          // Parse types and subtypes from type_line (e.g., "Legendary Creature — Human Wizard")
+
+          const faces = Array.isArray(card.card_faces) ? card.card_faces : [];
+
+          // 1. Resolve oracle_text (combine faces if root is empty, as in DFCs/MDFCs)
+          let oracleText = card.oracle_text || "";
+          if (!oracleText && faces.length > 0) {
+            oracleText = faces.map(f => f.oracle_text || "").filter(Boolean).join("\n//\n");
+          }
+
+          // 2. Resolve mana_cost (take front face if root is empty)
+          let manaCost = card.mana_cost || "";
+          if (!manaCost && faces.length > 0) {
+            manaCost = faces[0].mana_cost || "";
+          }
+
+          // 3. Resolve type_line and parse types/subtypes across all faces
+          let typeLine = card.type_line || "";
+          if (!typeLine && faces.length > 0) {
+            typeLine = faces.map(f => f.type_line || "").filter(Boolean).join(" // ");
+          }
+
           let types = [];
           let subtypes = [];
-          const typeLine = card.type_line || "";
           if (typeLine) {
-            const parts = typeLine.split("—");
-            const typePart = parts[0].trim();
-            types = typePart.split(" ").map(t => t.toLowerCase());
-            
-            if (parts[1]) {
-              subtypes = parts[1].trim().split(" ").filter(Boolean).map(s => s.toLowerCase());
+            const faceTypeLines = typeLine.split("//");
+            for (const ftl of faceTypeLines) {
+              const parts = ftl.split("—");
+              const mainTypes = parts[0].trim().split(/\s+/).map(t => t.toLowerCase());
+              types.push(...mainTypes);
+              if (parts[1]) {
+                const subTypes = parts[1].trim().split(/\s+/).filter(Boolean).map(s => s.toLowerCase());
+                subtypes.push(...subTypes);
+              }
             }
+            types = [...new Set(types)];
+            subtypes = [...new Set(subtypes)];
           }
-          
-          database[name.toLowerCase()] = {
+
+          // 4. Resolve image_url (check front face if root image_uris is missing)
+          let imageUrl = "";
+          if (card.image_uris) {
+            imageUrl = card.image_uris.normal || card.image_uris.small || "";
+          } else if (faces.length > 0 && faces[0].image_uris) {
+            imageUrl = faces[0].image_uris.normal || faces[0].image_uris.small || "";
+          }
+
+          // 5. Resolve colors
+          let colors = card.colors || [];
+          if (colors.length === 0 && faces.length > 0) {
+            const combined = new Set();
+            for (const f of faces) {
+              for (const c of (f.colors || [])) combined.add(c);
+            }
+            colors = [...combined];
+          }
+
+          const cardData = {
             name: name,
             raw_type: typeLine,
             types: types,
             subtypes: subtypes,
-            oracle_text: card.oracle_text || "",
-            mana_cost: card.mana_cost || "",
-            cmc: card.cmc || 0,
-            colors: card.colors || [],
+            oracle_text: oracleText,
+            mana_cost: manaCost,
+            cmc: card.cmc ?? 0,
+            colors: colors,
             set: card.set || "",
-            image_url: card.image_uris ? (card.image_uris.normal || card.image_uris.small) : "",
+            image_url: imageUrl,
             edhrec_rank: card.edhrec_rank
           };
+
+          // Store by full canonical name
+          database[name.toLowerCase()] = cardData;
+
+          // If the card is a split, DFC, or adventure card, alias the front face name
+          if (name.includes(" // ")) {
+            const frontName = name.split(" // ")[0].trim().toLowerCase();
+            if (!database[frontName]) {
+              database[frontName] = cardData;
+            }
+          }
         }
       }
       
