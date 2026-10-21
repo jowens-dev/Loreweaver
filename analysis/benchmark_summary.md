@@ -1,33 +1,33 @@
 # Benchmark Evaluation Results: Sprint 2
 
-**Date:** 2026-10-21 00:04:54 UTC  
+**Date:** 2026-10-21 04:37:17 UTC  
 **Standard:** Pre-registered thresholds from `analysis/evaluation-plan.md`  
 
 ## Summary Results Table
 
 | Deck | Commander | Engine | Precision@5 | Chain Recall | False-Cut Rate | Latency | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `belbe` | Belbe, Corrupted Observer | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 40.0% | 0.0011s | *FAIL* |
-| `belbe` | Belbe, Corrupted Observer | Baseline 1 (EDHREC + Curve) | 0.0% | 33.3% | 20.0% | 0.0002s | *FAIL* |
-| `belbe` | Belbe, Corrupted Observer | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0009s | **PASS** |
-| `prosper` | Prosper, Tome-Bound | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 20.0% | 0.0012s | *FAIL* |
-| `prosper` | Prosper, Tome-Bound | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0001s | *FAIL* |
-| `prosper` | Prosper, Tome-Bound | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0010s | **PASS** |
-| `veyran` | Veyran, Voice of Duality | Baseline 0 (Regex Heuristic) | 40.0% | 0.0% | 0.0% | 0.0011s | *FAIL* |
-| `veyran` | Veyran, Voice of Duality | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0001s | *FAIL* |
-| `veyran` | Veyran, Voice of Duality | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0006s | **PASS** |
-| `teysa` | Teysa Karlov | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 0.0% | 0.0005s | *FAIL* |
-| `teysa` | Teysa Karlov | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0002s | *FAIL* |
-| `teysa` | Teysa Karlov | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0004s | **PASS** |
-| `brago` | Brago, King Eternal | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 0.0% | 0.0007s | *FAIL* |
-| `brago` | Brago, King Eternal | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0001s | *FAIL* |
-| `brago` | Brago, King Eternal | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0004s | **PASS** |
-| `sythis` | Sythis, Harvest's Hand | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 0.0% | 0.0006s | *FAIL* |
-| `sythis` | Sythis, Harvest's Hand | Baseline 1 (EDHREC + Curve) | 80.0% | 33.3% | 0.0% | 0.0001s | *FAIL* |
-| `sythis` | Sythis, Harvest's Hand | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0006s | **PASS** |
-| `aesi` | Aesi, Tyrant of Gyre Strait | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 0.0% | 0.0011s | *FAIL* |
-| `aesi` | Aesi, Tyrant of Gyre Strait | Baseline 1 (EDHREC + Curve) | 60.0% | 33.3% | 0.0% | 0.0001s | *FAIL* |
-| `aesi` | Aesi, Tyrant of Gyre Strait | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0004s | **PASS** |
+| `belbe` | Belbe, Corrupted Observer | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 40.0% | 0.0002s | *FAIL* |
+| `belbe` | Belbe, Corrupted Observer | Baseline 1 (EDHREC + Curve) | 0.0% | 33.3% | 20.0% | 0.0000s | *FAIL* |
+| `belbe` | Belbe, Corrupted Observer | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0003s | **PASS** |
+| `prosper` | Prosper, Tome-Bound | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 20.0% | 0.0001s | *FAIL* |
+| `prosper` | Prosper, Tome-Bound | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `prosper` | Prosper, Tome-Bound | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0002s | **PASS** |
+| `veyran` | Veyran, Voice of Duality | Baseline 0 (Regex Heuristic) | 40.0% | 0.0% | 0.0% | 0.0001s | *FAIL* |
+| `veyran` | Veyran, Voice of Duality | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `veyran` | Veyran, Voice of Duality | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0001s | **PASS** |
+| `teysa` | Teysa Karlov | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 0.0% | 0.0001s | *FAIL* |
+| `teysa` | Teysa Karlov | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `teysa` | Teysa Karlov | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0001s | **PASS** |
+| `brago` | Brago, King Eternal | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 0.0% | 0.0001s | *FAIL* |
+| `brago` | Brago, King Eternal | Baseline 1 (EDHREC + Curve) | 40.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `brago` | Brago, King Eternal | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0001s | **PASS** |
+| `sythis` | Sythis, Harvest's Hand | Baseline 0 (Regex Heuristic) | 0.0% | 0.0% | 0.0% | 0.0001s | *FAIL* |
+| `sythis` | Sythis, Harvest's Hand | Baseline 1 (EDHREC + Curve) | 80.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `sythis` | Sythis, Harvest's Hand | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0001s | **PASS** |
+| `aesi` | Aesi, Tyrant of Gyre Strait | Baseline 0 (Regex Heuristic) | 20.0% | 0.0% | 0.0% | 0.0001s | *FAIL* |
+| `aesi` | Aesi, Tyrant of Gyre Strait | Baseline 1 (EDHREC + Curve) | 60.0% | 33.3% | 0.0% | 0.0000s | *FAIL* |
+| `aesi` | Aesi, Tyrant of Gyre Strait | Option 4 (Hybrid Deterministic Pruner) | 80.0% | 100.0% | 0.0% | 0.0001s | **PASS** |
 
 ---
 

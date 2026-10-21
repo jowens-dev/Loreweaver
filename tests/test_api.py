@@ -77,3 +77,55 @@ def test_analyze_deck_endpoint_belbe():
     assert "Triskaidekaphobia" in cut_names
     assert "Portal to Phyrexia" not in cut_names
     assert "Portal to Phyrexia" in data["protected_pillars"]
+
+
+def test_build_deck_endpoint_with_commander():
+    response = client.post(
+        "/api/build",
+        json={
+            "commander": "Belbe, Corrupted Observer",
+            "deck_idea": "big mana Eldrazi ramp",
+            "bracket": 4,
+            "budget": "moderate",
+            "preferred_win_con": "combat"
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total_cards"] == 100
+    assert data["commander"]["name"] == "Belbe, Corrupted Observer"
+    assert data["bracket"]["tier"] == 4
+    assert len(data["categories"]["lands"]) == 33
+    assert len(data["categories"]["win_con"]) == 4
+
+
+def test_build_deck_endpoint_cedh_bracket_5():
+    response = client.post(
+        "/api/build",
+        json={
+            "commander": "Talion, the Kindly Lord",
+            "deck_idea": "cedh tournament combo",
+            "bracket": 5,
+            "budget": "unlimited",
+            "preferred_win_con": "combo"
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["total_cards"] == 100
+    assert data["bracket"]["tier"] == 5
+    assert len(data["categories"]["lands"]) == 28
+    assert data["stats"]["avg_cmc"] < 2.0
+
+
+def test_build_deck_endpoint_invalid_bracket():
+    response = client.post(
+        "/api/build",
+        json={
+            "commander": "Solphim, Mayhem Dominus",
+            "bracket": 6  # Out of range 1-5
+        }
+    )
+    assert response.status_code == 422  # Pydantic validation error

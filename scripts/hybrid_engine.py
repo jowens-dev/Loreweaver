@@ -18,8 +18,12 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
-import db
+try:
+    from scripts.math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
+    from scripts import db
+except ImportError:
+    from math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
+    import db
 
 # Classifiers for operational roles
 RAMP_REGEX = re.compile(

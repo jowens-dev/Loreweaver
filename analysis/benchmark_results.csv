@@ -1,22 +1,22 @@
 deck,commander,engine,precision_at_5,concordance,chain_recall,false_cut_rate,latency_sec,cost_usd,status,cuts
-belbe,"Belbe, Corrupted Observer",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,40.0%,0.0011s,$0.00,FAIL,"Kozilek, Butcher of Truth; Ulamog, the Ceaseless Hunger; Portal to Phyrexia; Triplicate Titan; Apex Altisaur"
-belbe,"Belbe, Corrupted Observer",Baseline 1 (EDHREC + Curve),0.0%,0.0%,33.3%,20.0%,0.0002s,$0.00,FAIL,Vampire Sovereign; Thornbow Archer; Night Market Lookout; Mardu Shadowspear; Scuttling Doom Engine
-belbe,"Belbe, Corrupted Observer",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0009s,$0.00,PASS,Triskaidekaphobia; Deathrite Shaman; Llanowar Elves; Chromatic Orrery; Vampire Sovereign
-prosper,"Prosper, Tome-Bound",Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,20.0%,0.0012s,$0.00,FAIL,Apex of Power; Blasphemous Act; Marionette Master; Stolen Strategy; Mirkwood Bats
-prosper,"Prosper, Tome-Bound",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0001s,$0.00,FAIL,Blightstep Pathway // Spirestep Pathway; Author of Shadows; Rakdos Locket; Hurl Through Hell; Throes of Chaos
-prosper,"Prosper, Tome-Bound",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0010s,$0.00,PASS,Apex of Power; Shiny Impetus; Rakdos Locket; Throes of Chaos; Blasphemous Act
-veyran,"Veyran, Voice of Duality",Baseline 0 (Regex Heuristic),40.0%,40.0%,0.0%,0.0%,0.0011s,$0.00,FAIL,Blasphemous Act; Blatant Thievery; Thousand-Year Storm; Spell Swindle; Aetherflux Reservoir
-veyran,"Veyran, Voice of Duality",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0001s,$0.00,FAIL,Slight of Hand; Aria of Flame; Izzet Locket; Chain Lightning; Divination
-veyran,"Veyran, Voice of Duality",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0006s,$0.00,PASS,Blatant Thievery; Izzet Locket; Spell Swindle; Divination; Slight of Hand
-teysa,Teysa Karlov,Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,0.0%,0.0005s,$0.00,FAIL,"Kokusho, the Evening Star; Boon Reflection; Black Market; Dictate of Erebos; Elenda, the Dusk Rose"
-teysa,Teysa Karlov,Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0002s,$0.00,FAIL,"Orzhov Locket; Lingering Souls; Boon Reflection; Kaya's Wrath; Teysa, Orzhov Scion"
-teysa,Teysa Karlov,Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0004s,$0.00,PASS,Open the Armory; Orzhov Locket; Vampire Nighthawk; Boon Reflection; Lingering Souls
-brago,"Brago, King Eternal",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,0.0%,0.0007s,$0.00,FAIL,Agent of Treachery; Sun Titan; Lavinia of the Tenth; Time Wipe; Conjurer's Closet
-brago,"Brago, King Eternal",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0001s,$0.00,FAIL,Font of Fortunes; Trial of Knowledge; Banishment; Watcher for the Tomorrow; Act of Authority
-brago,"Brago, King Eternal",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0004s,$0.00,PASS,Azorius Locket; Font of Fortunes; Banishment; Pacifism; Trial of Knowledge
-sythis,"Sythis, Harvest's Hand",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,0.0%,0.0006s,$0.00,FAIL,"Sigil of the Empty Throne; Karametra, God of Harvests; Fumigate; Privileged Position; Mirari's Wake"
-sythis,"Sythis, Harvest's Hand",Baseline 1 (EDHREC + Curve),80.0%,80.0%,33.3%,0.0%,0.0001s,$0.00,FAIL,Healing Salve; Bramblecrush; Selesnya Locket; Plummet; Oblivion Ring
-sythis,"Sythis, Harvest's Hand",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0006s,$0.00,PASS,Selesnya Locket; Bramblecrush; Healing Salve; Plummet; Oblivion Ring
-aesi,"Aesi, Tyrant of Gyre Strait",Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,0.0%,0.0011s,$0.00,FAIL,Reshape the Earth; Cultivator Colossus; Ancient Greenwarden; Kodama of the East Tree; Brambleweft Behemoth
-aesi,"Aesi, Tyrant of Gyre Strait",Baseline 1 (EDHREC + Curve),60.0%,60.0%,33.3%,0.0%,0.0001s,$0.00,FAIL,Spitting Hydra; Brambleweft Behemoth; Simic Locket; Divination; Reshape the Earth
-aesi,"Aesi, Tyrant of Gyre Strait",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0004s,$0.00,PASS,Simic Locket; Divination; Brambleweft Behemoth; Naturalize; Spitting Hydra
+belbe,"Belbe, Corrupted Observer",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,40.0%,0.0002s,$0.00,FAIL,"Kozilek, Butcher of Truth; Ulamog, the Ceaseless Hunger; Portal to Phyrexia; Triplicate Titan; Apex Altisaur"
+belbe,"Belbe, Corrupted Observer",Baseline 1 (EDHREC + Curve),0.0%,0.0%,33.3%,20.0%,0.0000s,$0.00,FAIL,Vampire Sovereign; Thornbow Archer; Night Market Lookout; Mardu Shadowspear; Scuttling Doom Engine
+belbe,"Belbe, Corrupted Observer",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0003s,$0.00,PASS,Triskaidekaphobia; Deathrite Shaman; Llanowar Elves; Chromatic Orrery; Vampire Sovereign
+prosper,"Prosper, Tome-Bound",Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,20.0%,0.0001s,$0.00,FAIL,Apex of Power; Blasphemous Act; Marionette Master; Stolen Strategy; Mirkwood Bats
+prosper,"Prosper, Tome-Bound",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,Blightstep Pathway // Spirestep Pathway; Author of Shadows; Rakdos Locket; Hurl Through Hell; Throes of Chaos
+prosper,"Prosper, Tome-Bound",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0002s,$0.00,PASS,Apex of Power; Shiny Impetus; Rakdos Locket; Throes of Chaos; Blasphemous Act
+veyran,"Veyran, Voice of Duality",Baseline 0 (Regex Heuristic),40.0%,40.0%,0.0%,0.0%,0.0001s,$0.00,FAIL,Blasphemous Act; Blatant Thievery; Thousand-Year Storm; Spell Swindle; Aetherflux Reservoir
+veyran,"Veyran, Voice of Duality",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,Slight of Hand; Aria of Flame; Izzet Locket; Chain Lightning; Divination
+veyran,"Veyran, Voice of Duality",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0001s,$0.00,PASS,Blatant Thievery; Izzet Locket; Spell Swindle; Divination; Slight of Hand
+teysa,Teysa Karlov,Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,0.0%,0.0001s,$0.00,FAIL,"Kokusho, the Evening Star; Boon Reflection; Black Market; Dictate of Erebos; Elenda, the Dusk Rose"
+teysa,Teysa Karlov,Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,"Orzhov Locket; Lingering Souls; Boon Reflection; Kaya's Wrath; Teysa, Orzhov Scion"
+teysa,Teysa Karlov,Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0001s,$0.00,PASS,Open the Armory; Orzhov Locket; Vampire Nighthawk; Boon Reflection; Lingering Souls
+brago,"Brago, King Eternal",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,0.0%,0.0001s,$0.00,FAIL,Agent of Treachery; Sun Titan; Lavinia of the Tenth; Time Wipe; Conjurer's Closet
+brago,"Brago, King Eternal",Baseline 1 (EDHREC + Curve),40.0%,40.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,Font of Fortunes; Trial of Knowledge; Banishment; Watcher for the Tomorrow; Act of Authority
+brago,"Brago, King Eternal",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0001s,$0.00,PASS,Azorius Locket; Font of Fortunes; Banishment; Pacifism; Trial of Knowledge
+sythis,"Sythis, Harvest's Hand",Baseline 0 (Regex Heuristic),0.0%,0.0%,0.0%,0.0%,0.0001s,$0.00,FAIL,"Sigil of the Empty Throne; Karametra, God of Harvests; Fumigate; Privileged Position; Mirari's Wake"
+sythis,"Sythis, Harvest's Hand",Baseline 1 (EDHREC + Curve),80.0%,80.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,Healing Salve; Bramblecrush; Selesnya Locket; Plummet; Oblivion Ring
+sythis,"Sythis, Harvest's Hand",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0001s,$0.00,PASS,Selesnya Locket; Bramblecrush; Healing Salve; Plummet; Oblivion Ring
+aesi,"Aesi, Tyrant of Gyre Strait",Baseline 0 (Regex Heuristic),20.0%,20.0%,0.0%,0.0%,0.0001s,$0.00,FAIL,Reshape the Earth; Cultivator Colossus; Ancient Greenwarden; Kodama of the East Tree; Brambleweft Behemoth
+aesi,"Aesi, Tyrant of Gyre Strait",Baseline 1 (EDHREC + Curve),60.0%,60.0%,33.3%,0.0%,0.0000s,$0.00,FAIL,Spitting Hydra; Brambleweft Behemoth; Simic Locket; Divination; Reshape the Earth
+aesi,"Aesi, Tyrant of Gyre Strait",Option 4 (Hybrid Deterministic Pruner),80.0%,80.0%,100.0%,0.0%,0.0001s,$0.00,PASS,Simic Locket; Divination; Brambleweft Behemoth; Naturalize; Spitting Hydra

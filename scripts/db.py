@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import sqlite3
 from pathlib import Path
 from typing import Any
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parents[1] / "data" / "cards.db"
+WUBRG_ORDER = ["W", "U", "B", "R", "G"]
 
 
 def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
@@ -42,6 +44,17 @@ def resolve_card_name(conn: sqlite3.Connection, name: str) -> str:
     return clean_name
 
 
+def parse_card_row(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
+    """Parse a database row into a structured card dictionary."""
+    card_dict = dict(row)
+    card_dict["types"] = json.loads(card_dict["types"]) if card_dict.get("types") else []
+    card_dict["subtypes"] = json.loads(card_dict["subtypes"]) if card_dict.get("subtypes") else []
+    card_dict["keywords"] = json.loads(card_dict["keywords"]) if card_dict.get("keywords") else []
+    card_dict["colors"] = [c.strip() for c in card_dict["colors"].split(",") if c.strip()] if card_dict.get("colors") else []
+    card_dict["color_identity"] = [c.strip() for c in card_dict["color_identity"].split(",") if c.strip()] if card_dict.get("color_identity") else []
+    return card_dict
+
+
 def get_card_by_name(conn: sqlite3.Connection, name: str) -> dict[str, Any] | None:
     """Retrieve full card metadata by name or alias."""
     canonical = resolve_card_name(conn, name)
@@ -59,14 +72,22 @@ def get_card_by_name(conn: sqlite3.Connection, name: str) -> dict[str, Any] | No
     row = cursor.fetchone()
     if not row:
         return None
+    return parse_card_row(row)
 
-    card_dict = dict(row)
-    card_dict["types"] = json.loads(card_dict["types"]) if card_dict.get("types") else []
-    card_dict["subtypes"] = json.loads(card_dict["subtypes"]) if card_dict.get("subtypes") else []
-    card_dict["keywords"] = json.loads(card_dict["keywords"]) if card_dict.get("keywords") else []
-    card_dict["colors"] = [c.strip() for c in card_dict["colors"].split(",") if c.strip()] if card_dict.get("colors") else []
-    card_dict["color_identity"] = [c.strip() for c in card_dict["color_identity"].split(",") if c.strip()] if card_dict.get("color_identity") else []
-    return card_dict
+
+def get_legal_color_identities(allowed_colors: list[str] | set[str] | str) -> list[str]:
+    """Compute all legal comma-separated color identity strings within allowed colors in WUBRG order."""
+    if isinstance(allowed_colors, str):
+        allowed = set(c.strip().upper() for c in allowed_colors.replace(",", " ").split() if c.strip())
+    else:
+        allowed = set(c.upper() for c in allowed_colors if c)
+
+    sorted_allowed = sorted(allowed, key=lambda c: WUBRG_ORDER.index(c) if c in WUBRG_ORDER else 99)
+    legal = [""]
+    for r in range(1, len(sorted_allowed) + 1):
+        for combo in itertools.combinations(sorted_allowed, r):
+            legal.append(",".join(combo))
+    return legal
 
 
 def get_cards_by_identity(
@@ -74,57 +95,66 @@ def get_cards_by_identity(
     allowed_colors: list[str] | set[str] | str,
     limit: int = 500
 ) -> list[dict[str, Any]]:
-    """Query cards whose color identity is legal under the given commander identity."""
-    if isinstance(allowed_colors, str):
-        allowed = set(c.strip().upper() for c in allowed_colors.replace(",", " ").split() if c.strip())
-    else:
-        allowed = set(c.upper() for c in allowed_colors if c)
+    """Query cards whose color identity is legal under the given commander identity using indexed subset matching."""
+    legal_identities = get_legal_color_identities(allowed_colors)
+    placeholders = ",".join("?" * len(legal_identities))
 
     cursor = conn.cursor()
-    # Colorless commanders (allowed == empty set) can only run colorless cards (color_identity == '')
-    if not allowed:
-        cursor.execute(
-            """
-            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
-                   subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
-            FROM cards
-            WHERE color_identity = ''
-            ORDER BY edhrec_rank ASC NULLS LAST
-            LIMIT ?
-            """,
-            (limit,)
-        )
-    else:
-        # Pre-filter in SQL, refine in Python
-        cursor.execute(
-            """
-            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
-                   subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
-            FROM cards
-            WHERE edhrec_rank IS NOT NULL
-            ORDER BY edhrec_rank ASC
-            LIMIT ?
-            """,
-            (limit * 2,)
-        )
+    cursor.execute(
+        f"""
+        SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+               subtypes, colors, color_identity, oracle_text, flavor_text,
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+        FROM cards
+        WHERE color_identity IN ({placeholders})
+          AND set_type NOT IN ('funny', 'alchemy')
+          AND edhrec_rank IS NOT NULL
+        ORDER BY edhrec_rank ASC
+        LIMIT ?
+        """,
+        (*legal_identities, limit)
+    )
 
-    results = []
-    for row in cursor.fetchall():
-        row_id = set(c.strip() for c in (row["color_identity"] or "").split(",") if c.strip())
-        if row_id.issubset(allowed):
-            card_dict = dict(row)
-            card_dict["types"] = json.loads(card_dict["types"]) if card_dict.get("types") else []
-            card_dict["subtypes"] = json.loads(card_dict["subtypes"]) if card_dict.get("subtypes") else []
-            card_dict["keywords"] = json.loads(card_dict["keywords"]) if card_dict.get("keywords") else []
-            card_dict["colors"] = [c.strip() for c in card_dict["colors"].split(",") if c.strip()] if card_dict.get("colors") else []
-            card_dict["color_identity"] = list(row_id)
-            results.append(card_dict)
-            if len(results) >= limit:
-                break
+    return [parse_card_row(row) for row in cursor.fetchall()]
 
-    return results
+
+def search_commanders(
+    conn: sqlite3.Connection,
+    query: str = "",
+    allowed_colors: list[str] | set[str] | str | None = None,
+    limit: int = 50
+) -> list[dict[str, Any]]:
+    """Search for legendary creatures and planeswalkers legal as Commander."""
+    cursor = conn.cursor()
+    params: list[Any] = []
+    conditions = [
+        "(type_line LIKE '%Legendary%Creature%' OR oracle_text LIKE '%can be your commander%')",
+        "set_type NOT IN ('funny', 'alchemy')",
+        "edhrec_rank IS NOT NULL"
+    ]
+
+    if query.strip():
+        conditions.append("name_lower LIKE ?")
+        params.append(f"%{query.strip().lower()}%")
+
+    if allowed_colors is not None:
+        legal_identities = get_legal_color_identities(allowed_colors)
+        placeholders = ",".join("?" * len(legal_identities))
+        conditions.append(f"color_identity IN ({placeholders})")
+        params.extend(legal_identities)
+
+    sql = f"""
+        SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+               subtypes, colors, color_identity, oracle_text, flavor_text,
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+        FROM cards
+        WHERE {' AND '.join(conditions)}
+        ORDER BY edhrec_rank ASC
+        LIMIT ?
+    """
+    params.append(limit)
+    cursor.execute(sql, params)
+    return [parse_card_row(row) for row in cursor.fetchall()]
 
 
 def get_term_frequencies(conn: sqlite3.Connection) -> dict[str, dict[str, int]]:

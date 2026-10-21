@@ -17,6 +17,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 import db  # noqa: E402
+import deck_builder  # noqa: E402
 import hybrid_engine  # noqa: E402
 
 app = FastAPI(
@@ -208,5 +209,41 @@ def analyze_deck_endpoint(req: AnalyzeRequest) -> dict[str, Any]:
         analysis = hybrid_engine.analyze_deck(active_commander, mainboard, req.spice, conn)
         analysis["unmapped_cards"] = unmapped
         return analysis
+    finally:
+        conn.close()
+
+
+class BuildDeckRequest(BaseModel):
+    commander: str = Field(default="", description="Specific commander name, or leave blank to auto-discover")
+    deck_idea: str = Field(default="", description="Deck idea, strategy, or theme description (e.g. 'Aristocrats sacrifice and drain')")
+    bracket: int = Field(default=3, ge=1, le=5, description="Commander bracket tier (1=Exhibition, 2=Precon, 3=Optimized, 4=High Power Unrestricted, 5=cEDH Meta)")
+    budget: str = Field(default="moderate", description="Budget tier ('budget', 'moderate', 'unlimited')")
+    color_preference: str = Field(default="", description="Preferred colors (e.g. 'Golgari', 'W,B', 'Dimir')")
+    preferred_win_con: str = Field(default="combat", description="Preferred win condition ('combat', 'combo', 'drain', 'stax', 'burn', 'voltron', 'mill')")
+
+
+@app.post("/api/build")
+def build_deck_endpoint(req: BuildDeckRequest) -> dict[str, Any]:
+    """Build a complete, tournament-legal 100-card Commander deck from objective synergy scores and bracket rules."""
+    try:
+        conn = db.get_connection()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
+
+    try:
+        deck = deck_builder.build_deck(
+            conn=conn,
+            commander_name=req.commander,
+            deck_idea=req.deck_idea,
+            bracket=req.bracket,
+            budget=req.budget,
+            color_preference=req.color_preference,
+            preferred_win_con=req.preferred_win_con
+        )
+        return deck
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Deck building error: {e}")
     finally:
         conn.close()

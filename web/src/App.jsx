@@ -3,7 +3,7 @@ import { fetchCardsMetadata } from './utils/scryfall';
 import { parseDecklistText, calculateCohesionScore, calculateFlavorProfile, analyzeIntentionalExperience } from './utils/themeEngine';
 import { analyzeStress } from './utils/stressTester';
 import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInjector';
-import LoreweaverDashboard from './LoreweaverDashboard';
+import DeckArchitect from './DeckArchitect';
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -166,6 +166,12 @@ function App() {
         protected_pillars: [...(backendAnalysis.protected_pillars || []), replacementCard]
       });
     }
+  };
+
+  const handleLoadArchitectDeck = (cmdName, text) => {
+    if (cmdName) setCommander(cmdName);
+    if (text) setDecklist(text);
+    setActiveTab('input');
   };
   
   const [brokenChains, setBrokenChains] = useState([]);
@@ -1045,10 +1051,10 @@ function App() {
           </div>
         )}
         {activeTab === 'builder' && (
-          <div className="tab-panel" style={{ padding: 0, height: '100vh', overflow: 'hidden' }}>
-            <LoreweaverDashboard/>
+          <div className="tab-panel" style={{ padding: 0 }}>
+            <DeckArchitect onAnalyzeDeck={handleLoadArchitectDeck} />
           </div>
-          )}
+        )}
           {activeTab === 'legal' && (
           <div className="tab-panel">
             <div className="card" style={{ textAlign: 'center', opacity: 0.8, marginTop: '20px' }}>
