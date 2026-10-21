@@ -3,6 +3,7 @@ import {
   Sparkles,
   Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers
 } from 'lucide-react';
+import CommanderAutocomplete from './components/CommanderAutocomplete';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -260,18 +261,22 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
         {/* Form Panel */}
         <div className="card" style={{ height: 'fit-content' }}>
           <form onSubmit={handleBuildDeck}>
-            {/* Commander Input */}
+            {/* Commander Input with Predictive Search */}
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Commander (Optional)</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Auto-discovers if empty</span>
               </label>
-              <input
-                type="text"
-                className="form-input"
-                placeholder="e.g. Belbe, Corrupted Observer (or leave blank)"
+              <CommanderAutocomplete
                 value={commander}
-                onChange={(e) => setCommander(e.target.value)}
+                onChange={setCommander}
+                onSelect={(card) => {
+                  setCommander(card.name);
+                  if (card.color_identity) {
+                    setSelectedColors(card.color_identity.length > 0 ? card.color_identity : ['C']);
+                  }
+                }}
+                placeholder="Type commander name (e.g. Belbe, Atraxa, Ur-Dragon...)"
               />
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
                 {SUGGESTIONS.map((s) => (

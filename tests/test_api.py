@@ -129,3 +129,16 @@ def test_build_deck_endpoint_invalid_bracket():
         }
     )
     assert response.status_code == 422  # Pydantic validation error
+
+
+def test_search_cards_endpoint():
+    response = client.get("/api/search?q=bel&commanders_only=true")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) > 0
+    names = [c["name"] for c in data]
+    assert any("Belbe" in n for n in names)
+    for c in data:
+        assert "name" in c
+        assert "type_line" in c
+        assert "color_identity" in c

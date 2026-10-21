@@ -85,6 +85,25 @@ def health_check() -> dict[str, Any]:
         }
 
 
+@app.get("/api/search")
+def search_cards_endpoint(
+    q: str = Query(default="", min_length=1, description="Card name prefix or query"),
+    commanders_only: bool = Query(default=True, description="Filter results to legal commanders"),
+    limit: int = Query(default=8, ge=1, le=50, description="Max results")
+) -> list[dict[str, Any]]:
+    """Predictive autocomplete search for cards and commanders by name."""
+    try:
+        conn = db.get_connection()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
+
+    try:
+        results = db.search_cards_predictive(conn=conn, query=q, commanders_only=commanders_only, limit=limit)
+        return results
+    finally:
+        conn.close()
+
+
 @app.get("/api/recommendations")
 def get_recommendations(
     commander: str = Query(default="", description="Name of the commander to build around"),

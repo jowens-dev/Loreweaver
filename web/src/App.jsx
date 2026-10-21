@@ -4,6 +4,7 @@ import { parseDecklistText, calculateCohesionScore, calculateFlavorProfile, anal
 import { analyzeStress } from './utils/stressTester';
 import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInjector';
 import DeckArchitect from './DeckArchitect';
+import CommanderAutocomplete from './components/CommanderAutocomplete';
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -404,11 +405,11 @@ function App() {
             <div className="card">
               <div className="form-group">
                 <label className="form-label">Commander Name</label>
-                <input 
-                  type="text" 
-                  className="text-input" 
+                <CommanderAutocomplete
                   value={commander}
-                  onChange={(e) => setCommander(e.target.value)}
+                  onChange={setCommander}
+                  className="text-input"
+                  placeholder="e.g. Atraxa, Praetors' Voice"
                 />
               </div>
 
@@ -1055,22 +1056,9 @@ function App() {
             <DeckArchitect onAnalyzeDeck={handleLoadArchitectDeck} />
           </div>
         )}
-          {activeTab === 'legal' && (
-          <div className="tab-panel">
-            <div className="card" style={{ textAlign: 'center', opacity: 0.8, marginTop: '20px' }}>
-              <h2>Legal & Privacy</h2>
-              <p style={{ fontSize: '0.85rem', marginBottom: '16px', lineHeight: '1.5' }}>
-                Unofficial Fan Content permitted under the <a href="https://company.wizards.com/fancontentpolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}>WotC Fan Content Policy</a>. © Wizards of the Coast LLC.
-              </p>
-              <p style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>
-                🔒 <strong>Privacy:</strong> Decklists are analyzed locally in your browser. No data is saved, tracked, or stored remotely on any server.
-              </p>
-            </div>
-          </div>
-        )}
       </main>
 
-      {/* Bottom Nav tabs bar with prominent Builder hero in the center */}
+      {/* Balanced 5-tab Bottom Nav with prominent Builder hero in the center */}
       <nav className="bottom-nav">
         <button 
           className={`nav-tab ${activeTab === 'input' ? 'active' : ''}`}
@@ -1110,14 +1098,12 @@ function App() {
           <span className="nav-icon">🌶️</span>
           <span>Spice</span>
         </button>
-        <button 
-          className={`nav-tab ${activeTab === 'legal' ? 'active' : ''}`}
-          onClick={() => setActiveTab('legal')}
-        >
-          <span className="nav-icon">📜</span>
-          <span>Legal</span>
-        </button>
       </nav>
+
+      {/* Subtle WotC Policy Disclaimer Footer */}
+      <footer style={{ textAlign: 'center', padding: '6px 12px', fontSize: '0.68rem', color: 'var(--text-muted)', opacity: 0.6 }}>
+        Unofficial Fan Content permitted under the <a href="https://company.wizards.com/fancontentpolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}>WotC Fan Content Policy</a>. © Wizards of the Coast LLC.
+      </footer>
     </div>
   );
 }

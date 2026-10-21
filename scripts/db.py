@@ -157,6 +157,47 @@ def search_commanders(
     return [parse_card_row(row) for row in cursor.fetchall()]
 
 
+def search_cards_predictive(
+    conn: sqlite3.Connection,
+    query: str,
+    commanders_only: bool = True,
+    limit: int = 8
+) -> list[dict[str, Any]]:
+    """Predictive search for cards by prefix/word-boundary with popularity ranking."""
+    clean_q = query.strip().lower()
+    if not clean_q:
+        return []
+
+    cursor = conn.cursor()
+    conditions = [
+        "set_type NOT IN ('funny', 'alchemy')",
+        "edhrec_rank IS NOT NULL"
+    ]
+    if commanders_only:
+        conditions.append("(type_line LIKE '%Legendary%Creature%' OR oracle_text LIKE '%can be your commander%')")
+
+    conditions.append("(name_lower LIKE ? OR name_lower LIKE ?)")
+    params = [f"{clean_q}%", f"% {clean_q}%"]
+
+    sql = f"""
+        SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+               subtypes, colors, color_identity, oracle_text, flavor_text,
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+        FROM cards
+        WHERE {' AND '.join(conditions)}
+        ORDER BY 
+            CASE 
+                WHEN name_lower = ? THEN 0
+                WHEN name_lower LIKE ? THEN 1
+                ELSE 2
+            END,
+            edhrec_rank ASC
+        LIMIT ?
+    """
+    cursor.execute(sql, [*params, clean_q, f"{clean_q}%", limit])
+    return [parse_card_row(row) for row in cursor.fetchall()]
+
+
 def get_term_frequencies(conn: sqlite3.Connection) -> dict[str, dict[str, int]]:
     """Retrieve global frequency counts for subtypes and keywords."""
     cursor = conn.cursor()
