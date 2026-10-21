@@ -123,6 +123,57 @@ body {
   background-color: rgba(255, 255, 255, 0.03);
 }
 
+/* Hero Center Nav Button (Weave Deck) */
+.nav-tab-hero {
+  flex: 1.35;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.28), rgba(56, 189, 248, 0.22));
+  border-radius: 14px 14px 0 0;
+  border: 1.5px solid rgba(168, 85, 247, 0.45);
+  border-bottom: none;
+  margin-top: -10px;
+  padding-top: 6px;
+  box-shadow: 0 -4px 18px rgba(168, 85, 247, 0.3);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.92;
+  cursor: pointer;
+}
+
+.nav-tab-hero:hover {
+  opacity: 1;
+  transform: translateY(-3px);
+  box-shadow: 0 -6px 24px rgba(168, 85, 247, 0.55);
+  border-color: #c084fc;
+}
+
+.nav-tab-hero.active {
+  opacity: 1;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.5), rgba(56, 189, 248, 0.35));
+  border-color: #a855f7;
+  box-shadow: 0 -6px 28px rgba(168, 85, 247, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.nav-tab-hero .nav-icon {
+  font-size: 1.55rem;
+  filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.9));
+  transition: transform 0.2s ease;
+}
+
+.nav-tab-hero:hover .nav-icon {
+  transform: scale(1.15);
+}
+
+.nav-tab-hero span:last-child {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #f3e8ff;
+  letter-spacing: 0.3px;
+}
+
 .nav-icon {
   font-size: 1.25rem;
 }

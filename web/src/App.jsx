@@ -112,7 +112,7 @@ const mapRecommendationResponse = (payload) => {
 };
 
 function App() {
-  const [activeTab, setActiveTab] = useState('input');
+  const [activeTab, setActiveTab] = useState('builder');
   const [commander, setCommander] = useState('Kozilek, the Great Distortion');
   const [bracket, setBracket] = useState(2);
   const [targetIX, setTargetIX] = useState('Aggro-Combat');
@@ -1070,14 +1070,14 @@ function App() {
         )}
       </main>
 
-      {/* 1. Bottom Nav tabs bar MOVED UP */}
+      {/* Bottom Nav tabs bar with prominent Builder hero in the center */}
       <nav className="bottom-nav">
         <button 
           className={`nav-tab ${activeTab === 'input' ? 'active' : ''}`}
           onClick={() => setActiveTab('input')}
         >
           <span className="nav-icon">📥</span>
-          <span>Input</span>
+          <span>Audit</span>
         </button>
         <button 
           className={`nav-tab ${activeTab === 'cohesion' ? 'active' : ''}`}
@@ -1086,6 +1086,16 @@ function App() {
           <span className="nav-icon">🔮</span>
           <span>Cohesion</span>
         </button>
+
+        {/* Center Prominent Hero Builder Button */}
+        <button 
+          className={`nav-tab nav-tab-hero ${activeTab === 'builder' ? 'active' : ''}`}
+          onClick={() => setActiveTab('builder')}
+        >
+          <span className="nav-icon">✨</span>
+          <span>Weave Deck</span>
+        </button>
+
         <button 
           className={`nav-tab ${activeTab === 'stress' ? 'active' : ''}`}
           onClick={() => setActiveTab('stress')}
@@ -1099,13 +1109,6 @@ function App() {
         >
           <span className="nav-icon">🌶️</span>
           <span>Spice</span>
-        </button>
-        <button 
-          className={`nav-tab ${activeTab === 'builder' ? 'active' : ''}`}
-          onClick={() => setActiveTab('builder')}
-        >
-          <span className="nav-icon">🏗️</span>
-          <span>Builder</span>
         </button>
         <button 
           className={`nav-tab ${activeTab === 'legal' ? 'active' : ''}`}
