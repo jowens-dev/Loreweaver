@@ -108,19 +108,27 @@ def test_bracket_4_unrestricted_power():
     deck = deck_builder.build_deck(
         conn=conn,
         commander_name="Belbe, Corrupted Observer",
-        deck_idea="colorless titans",
+        deck_idea="deal damage to all players on every turn to play huge colorless spells with flash or instant speed",
         bracket=4,
         preferred_win_con="combat"
+    )
+    deck_veyran = deck_builder.build_deck(
+        conn=conn,
+        commander_name="Veyran, Voice of Duality",
+        deck_idea="spellslinger cantrips and storm",
+        bracket=4,
+        preferred_win_con="burn"
     )
     conn.close()
 
     assert deck["bracket"]["tier"] == 4
     all_names = {c["name"].lower() for group in deck["categories"].values() for c in group}
     assert "sol ring" in all_names
-    # Bracket 4 allows fast mana like Ancient Tomb
     assert "ancient tomb" in all_names
-    # Average CMC is balanced for high power
-    assert deck["stats"]["avg_cmc"] < 3.2
+    # Big mana colorless bombs are embraced for Belbe
+    assert any(c.get("cmc", 0) >= 6 for c in deck["categories"]["synergy"])
+    # Standard Bracket 4 spellslinger maintains lean CMC
+    assert deck_veyran["stats"]["avg_cmc"] < 2.8
 
 
 def test_bracket_5_cedh_meta_staples():

@@ -171,35 +171,91 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     }
   };
 
-  // Grouped cards for display
-  const allCards = deckResult ? [
-    { ...deckResult.commander, category: 'Commander' },
-    ...(deckResult.categories?.ramp || []).map(c => ({ ...c, category: 'Ramp' })),
-    ...(deckResult.categories?.draw || []).map(c => ({ ...c, category: 'Draw' })),
-    ...(deckResult.categories?.removal || []).map(c => ({ ...c, category: 'Removal' })),
-    ...(deckResult.categories?.win_con || []).map(c => ({ ...c, category: 'Win Con' })),
-    ...(deckResult.categories?.synergy || []).map(c => ({ ...c, category: 'Synergy' })),
-    ...(deckResult.categories?.lands || []).map(c => ({ ...c, category: 'Lands' })),
+  // Sections definitions for grouped display
+  const sections = deckResult ? [
+    {
+      id: 'commander',
+      title: 'Commander',
+      icon: '🛡️',
+      badgeColor: '#38bdf8',
+      cards: deckResult.commander ? [deckResult.commander] : []
+    },
+    {
+      id: 'win con',
+      title: 'Win Condition Core',
+      icon: '🏆',
+      badgeColor: '#ef4444',
+      cards: deckResult.categories?.win_con || []
+    },
+    {
+      id: 'ramp',
+      title: 'Fast Mana & Ramp',
+      icon: '⚡',
+      badgeColor: '#f59e0b',
+      cards: deckResult.categories?.ramp || []
+    },
+    {
+      id: 'draw',
+      title: 'Card Advantage & Draw',
+      icon: '📜',
+      badgeColor: '#10b981',
+      cards: deckResult.categories?.draw || []
+    },
+    {
+      id: 'removal',
+      title: 'Removal & Answers',
+      icon: '⚔️',
+      badgeColor: '#ec4899',
+      cards: deckResult.categories?.removal || []
+    },
+    {
+      id: 'synergy',
+      title: 'Thematic Engine & Synergy',
+      icon: '🔮',
+      badgeColor: '#8b5cf6',
+      cards: deckResult.categories?.synergy || []
+    },
+    {
+      id: 'lands',
+      title: 'Mana Base & Lands',
+      icon: '⛰️',
+      badgeColor: '#64748b',
+      cards: deckResult.categories?.lands || []
+    }
   ] : [];
 
-  const filteredCards = selectedCategory === 'all' 
-    ? allCards 
-    : allCards.filter(c => c.category?.toLowerCase() === selectedCategory.toLowerCase());
+  // Group duplicate cards (e.g. basic lands) for cleaner display
+  const groupCards = (cardList) => {
+    const map = new Map();
+    for (const card of cardList) {
+      const key = card.name;
+      if (map.has(key)) {
+        map.get(key).count += 1;
+      } else {
+        map.set(key, { ...card, count: 1 });
+      }
+    }
+    return Array.from(map.values());
+  };
+
+  const visibleSections = selectedCategory === 'all'
+    ? sections
+    : sections.filter((s) => s.id.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
-    <div className="tab-panel" style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '80px' }}>
+    <div className="tab-panel" style={{ maxWidth: '1440px', margin: '0 auto', paddingBottom: '80px' }}>
       {/* Studio Header */}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <h2 style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <Sparkles style={{ color: 'var(--text-accent)' }} /> Loreweaver Deck Architect
         </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '750px', margin: '6px auto 0' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '780px', margin: '6px auto 0' }}>
           Assemble tournament-legal 100-card Commander decks from scratch using objective synergy scores, Frank Karsten hypergeometric mana quotas, and Commander bracket rules.
         </p>
       </div>
 
       {/* Main Studio Grid: Form (Left) & Results (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: deckResult ? '400px 1fr' : '1fr', gap: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: deckResult ? '380px 1fr' : '1fr', gap: '24px' }}>
         
         {/* Form Panel */}
         <div className="card" style={{ height: 'fit-content' }}>
@@ -244,8 +300,8 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
               <label className="form-label">Strategy / Deck Idea Prompt</label>
               <textarea
                 className="form-input"
-                style={{ height: '70px', resize: 'vertical' }}
-                placeholder="e.g. Big mana Eldrazi ramp, Aristocrats sacrifice and drain, Spellslinger storm with cheap cantrips..."
+                style={{ height: '75px', resize: 'vertical' }}
+                placeholder="e.g. Deal damage to all players on every turn to play huge colorless spells with flash or instant speed..."
                 value={deckIdea}
                 onChange={(e) => setDeckIdea(e.target.value)}
               />
@@ -336,7 +392,7 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Color Preference</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Limits auto-discovery</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Filters commander discovery</span>
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 {COLOR_PIPS.map((pip) => {
@@ -417,16 +473,26 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
               </div>
             )}
 
-            {/* CTA Button */}
+            {/* Weave CTA Button with Pulsing Purple Glow Box on Hover */}
             <button
               type="submit"
-              className="btn btn-primary"
+              className="btn btn-primary btn-weave"
               disabled={loading}
-              style={{ width: '100%', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              style={{ 
+                width: '100%', 
+                padding: '13px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.95rem'
+              }}
             >
               {loading ? (
                 <>
-                  <RefreshCw className="loader-spinner" size={16} />
+                  <RefreshCw className="loader-spinner" size={18} />
                   <span>Weaving 100-Card Deck...</span>
                 </>
               ) : (
@@ -445,20 +511,20 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
             {/* 1. Commander Engine Dossier Banner */}
             <div className="card" style={{ 
               marginBottom: '16px', 
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
-              border: '1px solid rgba(56, 189, 248, 0.3)'
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95))',
+              border: '1px solid rgba(56, 189, 248, 0.35)'
             }}>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {deckResult.commander?.image_url && (
                   <img
                     src={deckResult.commander.image_url}
                     alt={deckResult.commander.name}
-                    style={{ width: '110px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}
+                    style={{ width: '120px', borderRadius: '8px', boxShadow: '0 4px 14px rgba(0,0,0,0.6)' }}
                   />
                 )}
                 <div style={{ flex: 1, minWidth: '280px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-accent)' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.45rem', color: 'var(--text-accent)' }}>
                       {deckResult.commander?.name}
                     </h3>
                     <span style={{ 
@@ -478,22 +544,31 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
 
                   {/* Engine Badges */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }}>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                    <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem' }}>
                       <div style={{ color: '#38bdf8', fontWeight: 'bold' }}>⚡ Catalyst</div>
                       <div>{deckResult.engine_dossier?.catalyst || 'Resource generator'}</div>
                     </div>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                    <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem' }}>
                       <div style={{ color: '#f59e0b', fontWeight: 'bold' }}>🪙 Yield</div>
                       <div>{deckResult.engine_dossier?.yield || 'Engine yield'}</div>
                     </div>
-                    <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                    <div style={{ background: 'rgba(0,0,0,0.35)', padding: '8px 10px', borderRadius: '6px', fontSize: '0.78rem' }}>
                       <div style={{ color: '#ef4444', fontWeight: 'bold' }}>🎯 Payoff</div>
                       <div>{deckResult.engine_dossier?.payoff || 'Payoff cards'}</div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '10px', fontSize: '0.82rem', color: '#a7f3d0' }}>
-                    🏆 {deckResult.win_con_execution}
+                  <div style={{ 
+                    marginTop: '12px', 
+                    fontSize: '0.84rem', 
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    color: '#6ee7b7',
+                    lineHeight: '1.45'
+                  }}>
+                    {deckResult.win_con_execution}
                   </div>
                 </div>
               </div>
@@ -533,7 +608,7 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                   <button
                     onClick={handleCopyClipboard}
                     className="btn btn-secondary"
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
                   >
                     {copied ? <Check size={14} style={{ color: '#22c55e' }} /> : <Copy size={14} />}
                     <span>{copied ? 'Copied!' : 'Copy 100 Cards'}</span>
@@ -541,7 +616,7 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                   <button
                     onClick={handleDownload}
                     className="btn btn-secondary"
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
                   >
                     <Download size={14} />
                     <span>Save .txt</span>
@@ -560,7 +635,8 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      gap: '4px' 
+                      gap: '4px',
+                      cursor: 'pointer'
                     }}
                   >
                     <ExternalLink size={14} />
@@ -573,14 +649,14 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
             {/* 3. Category Filter Tabs */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
               {[
-                { id: 'all', label: 'All Cards', count: 100 },
-                { id: 'commander', label: 'Commander', count: 1 },
-                { id: 'lands', label: 'Lands', count: deckResult.stats?.roles?.lands },
-                { id: 'ramp', label: 'Ramp', count: deckResult.stats?.roles?.ramp },
-                { id: 'draw', label: 'Draw', count: deckResult.stats?.roles?.draw },
-                { id: 'removal', label: 'Removal', count: deckResult.stats?.roles?.removal },
-                { id: 'win con', label: 'Win Cons', count: deckResult.stats?.roles?.win_con },
-                { id: 'synergy', label: 'Synergy Core', count: deckResult.stats?.roles?.synergy },
+                { id: 'all', label: 'All Sections (100)' },
+                { id: 'commander', label: 'Commander (1)' },
+                { id: 'win con', label: `Win Cons (${deckResult.stats?.roles?.win_con})` },
+                { id: 'ramp', label: `Ramp (${deckResult.stats?.roles?.ramp})` },
+                { id: 'draw', label: `Draw (${deckResult.stats?.roles?.draw})` },
+                { id: 'removal', label: `Removal (${deckResult.stats?.roles?.removal})` },
+                { id: 'synergy', label: `Synergy (${deckResult.stats?.roles?.synergy})` },
+                { id: 'lands', label: `Lands (${deckResult.stats?.roles?.lands})` },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -596,57 +672,105 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                     cursor: 'pointer'
                   }}
                 >
-                  {tab.label} ({tab.count})
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* 4. 100-Card Interactive Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-              {filteredCards.map((card, idx) => (
-                <div
-                  key={`${card.name}-${idx}`}
-                  className="card"
-                  style={{
-                    padding: '10px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    position: 'relative',
-                    transition: 'transform 0.15s ease',
-                    border: card.category === 'Win Con' ? '1px solid #ef4444' : (card.category === 'Ramp' ? '1px solid #f59e0b' : '1px solid var(--border-color)')
-                  }}
-                >
-                  {card.image_url && (
-                    <img
-                      src={card.image_url}
-                      alt={card.name}
-                      loading="lazy"
-                      style={{ width: '100%', borderRadius: '6px', marginBottom: '8px' }}
-                    />
-                  )}
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
-                      <span style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{card.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{card.mana_cost}</span>
+            {/* 4. Organized 100-Card Sectioned Display */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {visibleSections.map((sec) => {
+                const grouped = groupCards(sec.cards);
+                if (grouped.length === 0) return null;
+
+                return (
+                  <div key={sec.id} className="card" style={{ padding: '16px' }}>
+                    {/* Section Header */}
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      marginBottom: '14px',
+                      borderBottom: '1px solid var(--border-color)',
+                      paddingBottom: '8px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '1.2rem' }}>{sec.icon}</span>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', color: sec.badgeColor }}>
+                          {sec.title}
+                        </h4>
+                      </div>
+                      <span style={{ 
+                        background: 'var(--bg-primary)', 
+                        border: `1px solid ${sec.badgeColor}66`,
+                        color: sec.badgeColor,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold'
+                      }}>
+                        {sec.cards.length} cards
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {card.type_line}
+
+                    {/* Section Card Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                      {grouped.map((card, idx) => (
+                        <div
+                          key={`${card.name}-${idx}`}
+                          className="card"
+                          style={{
+                            padding: '8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            background: 'var(--bg-primary)',
+                            border: `1px solid ${sec.badgeColor}44`,
+                            borderRadius: '6px'
+                          }}
+                        >
+                          {card.image_url ? (
+                            <img
+                              src={card.image_url}
+                              alt={card.name}
+                              loading="lazy"
+                              style={{ width: '100%', borderRadius: '4px', marginBottom: '8px' }}
+                            />
+                          ) : (
+                            <div style={{ 
+                              width: '100%', 
+                              height: '120px', 
+                              background: '#1e293b', 
+                              borderRadius: '4px', 
+                              marginBottom: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              color: 'var(--text-muted)'
+                            }}>
+                              No Image
+                            </div>
+                          )}
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2' }}>
+                                {card.count > 1 ? `${card.count}x ` : ''}{card.name}
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                {card.mana_cost}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {card.type_line}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '0.68rem', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
-                    background: 'var(--bg-primary)', 
-                    color: 'var(--text-secondary)',
-                    alignSelf: 'flex-start'
-                  }}>
-                    {card.category}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (

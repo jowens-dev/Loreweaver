@@ -67,7 +67,6 @@ COLOR_MAP: dict[str, set[str]] = {
 }
 
 WUBRG_ORDER = ["W", "U", "B", "R", "G"]
-BASIC_LANDS = {"Plains": "W", "Island": "U", "Swamp": "B", "Mountain": "R", "Forest": "G", "Wastes": ""}
 
 # --- BRACKET CONFIGURATIONS ---
 BRACKET_CONFIGS = {
@@ -220,7 +219,7 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Blood Artist", "colors": {"B"}, "desc": "Targeted drain whenever any creature dies."},
         {"name": "Zulaport Cutthroat", "colors": {"B"}, "desc": "Drain each opponent whenever your creatures die."},
         {"name": "Cruel Celebrant", "colors": {"W", "B"}, "desc": "Each opponent loses 1 life whenever your creature dies."},
-        {"name": "Bastion of Remembrance", "colors": {"B"}, "desc": "Enchantment-based aristocrats drain protected from creature sweepers."},
+        {"name": "Bastion of Remembrance", "colors": {"B"}, "desc": "Enchantment-based aristocrats drain protected from sweepers."},
         {"name": "Elas il-Kor, Sadistic Pilgrim", "colors": {"W", "B"}, "desc": "Deathtouch drain engine for creature death triggers."},
         {"name": "Marionette Apprentice", "colors": {"B"}, "desc": "Drains opponents on creature or artifact death."},
         {"name": "Mayhem Devil", "colors": {"B", "R"}, "desc": "Direct ping damage whenever any player sacrifices a permanent."},
@@ -303,7 +302,6 @@ def resolve_color_identity(color_input: str | list[str] | set[str] | None) -> se
     if raw in COLOR_MAP:
         return set(COLOR_MAP[raw])
 
-    # Check comma, space, or slash separated individual letters
     tokens = re.split(r"[,/\s]+", raw)
     colors = set()
     for tok in tokens:
@@ -369,7 +367,6 @@ def find_matching_commander(
             elif color_pref.issubset(cand_colors):
                 score += 25.0
             else:
-                # Missing requested colors
                 score -= 40.0
 
         # Prompt token matches
@@ -377,7 +374,7 @@ def find_matching_commander(
             if tok in text:
                 score += 15.0
 
-        # EDHREC popularity bonus (normalized 0 to 15)
+        # EDHREC popularity bonus
         rank = cand.get("edhrec_rank") or 10000
         score += max(0.0, (10000.0 - rank) / 1000.0)
 
@@ -386,7 +383,7 @@ def find_matching_commander(
         if bracket >= 4 and cmc > 4:
             score -= (cmc - 4) * 5.0
         elif bracket <= 2 and cmc >= 5:
-            score += 3.0  # Big battlecruiser commanders welcome in casual
+            score += 3.0
 
         if score > best_score:
             best_score = score
@@ -445,33 +442,69 @@ def score_synergy(
     name = card["name"].lower()
     oracle = card.get("oracle_text", "").lower()
     type_line = card.get("type_line", "").lower()
+    types = [t.lower() for t in card.get("types", [])]
+    subtypes = [s.lower() for s in card.get("subtypes", [])]
     cmd_text = f"{commander['name']} {commander.get('oracle_text', '')}".lower()
+    cmc = card.get("cmc", 3.0)
 
     score = 0.0
 
+    # Detect Big-Mana / Colorless Engine (e.g., Belbe, Zhulodok, Rakdos)
+    is_big_mana_engine = (
+        "adds {c}{c}" in cmd_text or "colorless mana" in cmd_text or
+        "belbe" in cmd_text or "zhulodok" in cmd_text or "big mana" in prompt_tokens
+    )
+
     # 1. Commander catalyst/resource alignment
-    if "opponent loses" in cmd_text or "damage to each opponent" in cmd_text:
-        if "each opponent loses" in oracle or "damage to each opponent" in oracle:
-            score += 25.0
+    if "opponent loses" in cmd_text or "damage to each opponent" in cmd_text or "lost life this turn" in cmd_text:
+        # Pinger / Bleeder detection
+        if (
+            "each opponent loses" in oracle or
+            "damage to each opponent" in oracle or
+            "each player loses" in oracle or
+            "attacks, each opponent loses" in oracle or
+            "becomes tapped, each opponent loses" in oracle or
+            "deals 1 damage to each opponent" in oracle or
+            "each opponent who doesn" in oracle
+        ):
+            score += 55.0
+            # Extra bonus for cheap 1-2 CMC enablers that trigger on curve
+            if cmc <= 2:
+                score += 20.0
+
+    # Flash enablers for big-mana phase commanders (e.g., to cast spells during opponents' postcombat phases)
+    if is_big_mana_engine or "flash" in prompt_tokens:
+        if (
+            "as though they had flash" in oracle or
+            "may cast spells this turn as though they had flash" in oracle or
+            "may cast creature spells this turn as though they had flash" in oracle or
+            ("flash" in oracle and ("colorless" in oracle or "artifact" in oracle))
+        ):
+            score += 50.0
+
+        # Big Colorless Bombs (CMC 6+)
+        if cmc >= 6 and ("artifact" in types or "eldrazi" in subtypes or not card.get("color_identity")):
+            score += 45.0
+
     if "sacrifice" in cmd_text and "sacrifice" in oracle:
-        score += 20.0
+        score += 25.0
     if "dies" in cmd_text or "dying" in cmd_text:
         if "dies" in oracle or "dying" in oracle or "whenever another creature dies" in oracle:
-            score += 25.0
+            score += 30.0
     if "instant" in cmd_text or "sorcery" in cmd_text:
         if "instant" in type_line or "sorcery" in type_line or "spell" in oracle:
-            score += 20.0
+            score += 25.0
     if "artifact" in cmd_text and "artifact" in type_line:
-        score += 20.0
+        score += 25.0
 
     # 2. User prompt token matching
     for tok in prompt_tokens:
         if tok in name:
             score += 15.0
         elif tok in oracle:
-            score += 10.0
+            score += 12.0
         elif tok in type_line:
-            score += 8.0
+            score += 10.0
 
     # 3. Format ubiquity & quality via EDHREC rank
     rank = card.get("edhrec_rank")
@@ -479,9 +512,7 @@ def score_synergy(
         score += max(0.0, (15000.0 - rank) / 1000.0)
 
     # 4. Mana curve scoring based on bracket
-    cmc = card.get("cmc", 3.0)
     cfg = BRACKET_CONFIGS[bracket]
-    target_cmc = cfg["target_avg_cmc"]
 
     if bracket == 5:
         # Bracket 5 penalizes anything above CMC 2 heavily
@@ -496,10 +527,10 @@ def score_synergy(
     elif bracket == 4:
         if cmc <= 2:
             score += 6.0
-        elif cmc >= 6:
+        # If this is a big-mana deck, DO NOT penalize 6+ CMC bombs!
+        elif cmc >= 6 and not is_big_mana_engine:
             score -= 3.0
     elif bracket <= 2:
-        # Lower brackets appreciate big thematic bombs
         if 4.0 <= cmc <= 7.0:
             score += 4.0
 
@@ -560,13 +591,17 @@ def assemble_lands(
         try_add("City of Brass")
         try_add("Mana Confluence")
 
-    # In-color utility lands
+    # In-color utility lands & flash lands
+    try_add("Emergence Zone")
+    try_add("Winding Canyons")
+
     if "G" in allowed_colors:
         try_add("Boseiju, Who Endures")
         try_add("Yavimaya, Cradle of Growth")
     if "B" in allowed_colors:
         try_add("Urborg, Tomb of Yawgmoth")
         try_add("Bojuka Bog")
+        try_add("Leechridden Swamp")
     if "W" in allowed_colors:
         try_add("High Market")
     try_add("Reliquary Tower")
@@ -607,14 +642,12 @@ def assemble_lands(
     remaining_slots = max(0, target_lands - len(lands))
 
     basic_lookup = {"W": "Plains", "U": "Island", "B": "Swamp", "R": "Mountain", "G": "Forest"}
-    # Guarantee at least 1 basic of each commander color if slots allow
     allocated: dict[str, int] = {}
     for c in sorted(allowed_colors):
         prop = pip_counts[c] / total_pips
         count = max(1, round(prop * remaining_slots))
         allocated[c] = count
 
-    # Adjust sum to exactly remaining_slots
     diff = sum(allocated.values()) - remaining_slots
     if diff > 0 and len(allowed_colors) > 0:
         max_col = max(allocated, key=allocated.get)
@@ -629,12 +662,106 @@ def assemble_lands(
             for _ in range(cnt):
                 lands.append(b_card)
 
-    # If any rounding shortfall remains, fill with first color
     first_basic = db.get_card_by_name(conn, basic_lookup[sorted(allowed_colors)[0]])
     while len(lands) < target_lands and first_basic:
         lands.append(first_basic)
 
     return lands[:target_lands]
+
+
+def query_targeted_synergy_candidates(
+    conn: sqlite3.Connection,
+    allowed_colors: set[str],
+    commander: dict[str, Any],
+    prompt_tokens: set[str]
+) -> list[dict[str, Any]]:
+    """Query targeted archetypes from SQLite to ensure high-synergy enablers are included in the pool."""
+    cursor = conn.cursor()
+    legal_ids = db.get_legal_color_identities(allowed_colors)
+    placeholders = ",".join("?" * len(legal_ids))
+    cmd_text = f"{commander['name']} {commander.get('oracle_text', '')}".lower()
+
+    targeted: list[dict[str, Any]] = []
+
+    # 1. Pinger / Bleeder enablers if life loss / damage triggers commander
+    if "opponent loses" in cmd_text or "damage to each opponent" in cmd_text or "lost life this turn" in cmd_text:
+        sql = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND set_type NOT IN ('funny', 'alchemy')
+              AND edhrec_rank IS NOT NULL
+              AND (
+                oracle_text LIKE '%each opponent loses%'
+                OR oracle_text LIKE '%damage to each opponent%'
+                OR oracle_text LIKE '%each opponent who doesn%'
+                OR oracle_text LIKE '%becomes tapped, each opponent loses%'
+                OR oracle_text LIKE '%attacks, each opponent loses%'
+              )
+            ORDER BY edhrec_rank ASC LIMIT 80
+        """
+        cursor.execute(sql, legal_ids)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+    # 2. Flash enablers if big-mana engine or flash in prompt
+    is_big_mana = "adds {c}{c}" in cmd_text or "colorless mana" in cmd_text or "flash" in prompt_tokens
+    if is_big_mana:
+        sql = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND set_type NOT IN ('funny', 'alchemy')
+              AND edhrec_rank IS NOT NULL
+              AND (
+                oracle_text LIKE '%as though they had flash%'
+                OR oracle_text LIKE '%may cast%flash%'
+              )
+            ORDER BY edhrec_rank ASC LIMIT 30
+        """
+        cursor.execute(sql, legal_ids)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+        # 3. Big Colorless Bombs (CMC 6+)
+        sql = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND set_type NOT IN ('funny', 'alchemy')
+              AND edhrec_rank IS NOT NULL
+              AND cmc >= 6
+              AND (types LIKE '%artifact%' OR subtypes LIKE '%eldrazi%' OR color_identity = '')
+            ORDER BY edhrec_rank ASC LIMIT 80
+        """
+        cursor.execute(sql, legal_ids)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+    # 4. Sacrifice / Aristocrats targeted pool
+    if "sacrifice" in cmd_text or "dies" in cmd_text or "aristocrats" in prompt_tokens:
+        sql = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND set_type NOT IN ('funny', 'alchemy')
+              AND edhrec_rank IS NOT NULL
+              AND (
+                oracle_text LIKE '%whenever another creature dies%'
+                OR oracle_text LIKE '%whenever a creature you control dies%'
+                OR oracle_text LIKE '%sacrifice a creature%'
+              )
+            ORDER BY edhrec_rank ASC LIMIT 80
+        """
+        cursor.execute(sql, legal_ids)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+    return targeted
 
 
 def build_deck(
@@ -662,7 +789,6 @@ def build_deck(
         if not commander:
             raise ValueError(f"Commander '{commander_name}' not found in tournament-legal database.")
     else:
-        # Dynamically discover matching commander
         commander = find_matching_commander(
             conn=conn,
             prompt=deck_idea or preferred_win_con,
@@ -671,7 +797,6 @@ def build_deck(
             bracket=bracket
         )
         if not commander:
-            # Fallback to Atraxa or Solphim
             commander = db.get_card_by_name(conn, "Belbe, Corrupted Observer")
 
     if not commander:
@@ -681,8 +806,17 @@ def build_deck(
     prompt_tokens = {w.lower() for w in re.findall(r"\b\w{3,}\b", deck_idea)}
     prompt_tokens.add(preferred_win_con)
 
-    # 2. Query Card Pool Legal in Commander Identity
-    pool = db.get_cards_by_identity(conn, allowed_colors, limit=1200)
+    # 2. Query Card Pools Legal in Commander Identity (General Pool + Targeted Synergy Pool)
+    general_pool = db.get_cards_by_identity(conn, allowed_colors, limit=800)
+    targeted_pool = query_targeted_synergy_candidates(conn, allowed_colors, commander, prompt_tokens)
+
+    # Deduplicate pool by canonical lowercase name
+    combined_pool_map: dict[str, dict[str, Any]] = {}
+    for c in targeted_pool + general_pool:
+        if c["name_lower"] not in combined_pool_map:
+            combined_pool_map[c["name_lower"]] = c
+
+    pool = list(combined_pool_map.values())
 
     # 3. Filter pool by Bracket & Budget rules
     filtered_pool: list[dict[str, Any]] = []
@@ -691,17 +825,12 @@ def build_deck(
         if name_lower == commander["name"].lower():
             continue
 
-        # Fast mana restrictions
         if not cfg["allow_fast_mana"] and name_lower in FAST_MANA_CARDS:
             continue
         if not cfg["allow_sol_ring"] and name_lower == "sol ring":
             continue
-
-        # Tutor restrictions
         if not cfg["allow_tutors"] and name_lower in CHEAP_TUTORS:
             continue
-
-        # Budget exclusions
         if budget == "budget" and name_lower in EXPENSIVE_RESERVED_LIST:
             continue
 
@@ -729,14 +858,12 @@ def build_deck(
                 add_card(card, "ramp")
 
     if cfg["cedh_meta"]:
-        # Add colorless fast mana staples
         for s_name in CEDH_STAPLES_BY_COLOR["colorless"]:
             card = db.get_card_by_name(conn, s_name)
             if card and set(card["color_identity"]).issubset(allowed_colors):
                 role = "ramp" if "stone" in s_name.lower() or "mana" in s_name.lower() or "mox" in s_name.lower() or "sol" in s_name.lower() or "petal" in s_name.lower() or "signet" in s_name.lower() else "draw"
                 add_card(card, role)
 
-        # Add in-color cEDH staples
         for col in allowed_colors:
             for s_name in CEDH_STAPLES_BY_COLOR.get(col, []):
                 card = db.get_card_by_name(conn, s_name)
@@ -752,14 +879,12 @@ def build_deck(
         if pkg_item["colors"].issubset(allowed_colors):
             card = db.get_card_by_name(conn, pkg_item["name"])
             if card:
-                # Obey bracket fast mana and tutor bans
                 nl = card["name"].lower()
                 if not cfg["allow_combos"] and preferred_win_con == "combo" and nl in {"thassa's oracle", "demonic consultation", "underworld breach"}:
                     continue
                 add_card(card, "win_con")
 
     # 6. Fill Role Quotas from Filtered Pool
-    # Classify & score all available cards
     scored_candidates = []
     for c in filtered_pool:
         if c["name"].lower() in deck_cards:
@@ -821,16 +946,14 @@ def build_deck(
 
     avg_cmc = round(sum(c.get("cmc", 0.0) for c in nonland_spells) / max(1, len(nonland_spells)), 2)
 
-    # Mana curve
     mana_curve: dict[str, int] = {"0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6+": 0}
     for c in nonland_spells:
-        cmc = int(c.get("cmc", 0))
-        if cmc >= 6:
+        cmc_val = int(c.get("cmc", 0))
+        if cmc_val >= 6:
             mana_curve["6+"] += 1
         else:
-            mana_curve[str(cmc)] += 1
+            mana_curve[str(cmc_val)] += 1
 
-    # Consistency math
     land_count = len(lands)
     ramp_count = len(categorized["ramp"])
     total_deck = 1 + len(spells) + len(lands)
@@ -841,11 +964,27 @@ def build_deck(
         "p_land_and_ramp_turn_2": f"{p_turn2_ramp:.1f}%"
     }
 
-    # Operational Engine Dossier
     engine_dossier = detect_resource_profile(commander)
 
-    # Win-condition execution summary
-    win_con_exec = f"Executes victory through {preferred_win_con.upper()} using key cards: {', '.join(c['name'] for c in categorized['win_con'][:3])}. Tuned for Bracket {bracket} ({cfg['name']})."
+    # Detailed Win Condition & Engine Walkthrough
+    cmd_name = commander["name"]
+    cmd_oracle = (commander.get("oracle_text") or "").lower()
+
+    if "adds {c}{c}" in cmd_oracle or "belbe" in cmd_name.lower():
+        win_con_exec = (
+            f"⚡ Belbe Operational Engine: Deploys cheap 1–2 CMC symmetric bleeders (e.g. Creeping Bloodsucker, "
+            f"Sanctum of Stone Fangs, Night Market Lookout, Thornbow Archer) to reliably trigger Belbe for up to 6 {{C}} "
+            f"colorless mana. Leverages flash enablers (Liberator, Urza's Battlethopter, Shimmer Myr, Vedalken Orrery) "
+            f"to consume mana generated during opponents' postcombat main phases, casting massive colorless bombs "
+            f"(Portal to Phyrexia, Void Winnower, Wurmcoil Engine, Eldrazi Titans) at instant speed."
+        )
+    else:
+        win_con_exec = (
+            f"Executes victory through {preferred_win_con.upper()} using key cards: "
+            f"{', '.join(c['name'] for c in categorized['win_con'][:3])}. "
+            f"Engine catalyst: {engine_dossier.get('catalyst', 'Resource acceleration')}. "
+            f"Tuned for Bracket {bracket} ({cfg['name']})."
+        )
 
     # Exportable text decklist
     text_lines = [f"// Commander", f"1 {commander['name']}", ""]
@@ -853,7 +992,6 @@ def build_deck(
         if not group:
             continue
         text_lines.append(f"// {role.capitalize()} ({len(group)})")
-        # Count basic lands if duplicates
         counts: dict[str, int] = {}
         for c in group:
             counts[c["name"]] = counts.get(c["name"], 0) + 1
