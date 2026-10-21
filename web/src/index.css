@@ -41,11 +41,18 @@ body {
   display: flex;
   flex-direction: column;
   height: 100dvh; /* Locks exactly to the screen height */
-  max-width: 500px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
   background-color: var(--bg-primary);
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
   overflow: hidden; /* Prevents the whole browser from scrolling */
+}
+
+@media (min-width: 1024px) {
+  .app-container {
+    max-width: 1440px;
+  }
 }
 
 /* Header */

@@ -150,6 +150,23 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [results, setResults] = useState(null);
+  const [backendAnalysis, setBackendAnalysis] = useState(null);
+
+  const handleSwapCard = (cutCard, replacementCard) => {
+    if (!cutCard || !replacementCard) return;
+    const escaped = cutCard.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(^|\\n)(\\d+x?\\s+)?${escaped}(\\r?$)`, 'mi');
+    const nextDecklist = decklist.replace(regex, `$1$2${replacementCard}`);
+    setDecklist(nextDecklist);
+
+    if (backendAnalysis?.cuts) {
+      setBackendAnalysis({
+        ...backendAnalysis,
+        cuts: backendAnalysis.cuts.filter((c) => c.card !== cutCard),
+        protected_pillars: [...(backendAnalysis.protected_pillars || []), replacementCard]
+      });
+    }
+  };
   
   const [brokenChains, setBrokenChains] = useState([]);
   const [spiceRecommendations, setSpiceRecommendations] = useState([]);
@@ -168,7 +185,26 @@ function App() {
     setLoading(true);
     
     try {
-      // 1. Fetch Commander details dynamically from Scryfall
+      // 1. Call Backend Hybrid Analysis Engine
+      try {
+        const analyzeRes = await fetch(`${getApiBaseUrl()}/api/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commander: commander.trim(),
+            decklist: decklist,
+            spice: spiceLevel
+          })
+        });
+        if (analyzeRes.ok) {
+          const analyzeData = await analyzeRes.json();
+          setBackendAnalysis(analyzeData);
+        }
+      } catch (err) {
+        console.warn("Backend /api/analyze unavailable:", err);
+      }
+
+      // 2. Fetch Commander details dynamically from Scryfall
       let commanderCardInfo = null;
       try {
         let cleanCommander = commander.trim();
@@ -548,6 +584,121 @@ function App() {
                     )}
                   </div>
                 </div>
+
+                {/* 1. Commander Resource Engine Dossier */}
+                {backendAnalysis?.resource_profile && (
+                  <div className="card" style={{ border: '1px solid var(--accent-purple)', background: 'linear-gradient(135deg, rgba(106, 76, 147, 0.2), rgba(28, 15, 53, 0.8))' }}>
+                    <div className="form-label" style={{ color: 'var(--text-accent)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>⚡ Commander Operational Engine:</span>
+                      <strong style={{ color: 'var(--text-white)' }}>{backendAnalysis.resource_profile.engine_type}</strong>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '10px' }}>
+                      <div style={{ backgroundColor: 'var(--bg-input)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #3498db' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#3498db', fontWeight: 'bold', display: 'block', textTransform: 'uppercase' }}>Catalyst (Trigger)</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-white)' }}>{backendAnalysis.resource_profile.catalyst}</span>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--bg-input)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #f39c12' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#f39c12', fontWeight: 'bold', display: 'block', textTransform: 'uppercase' }}>Yield (Resource)</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-white)' }}>{backendAnalysis.resource_profile.yield}</span>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--bg-input)', padding: '10px', borderRadius: '8px', borderLeft: '3px solid #2ecc71' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#2ecc71', fontWeight: 'bold', display: 'block', textTransform: 'uppercase' }}>Payoff (Win Path)</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-white)' }}>{backendAnalysis.resource_profile.payoff}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Tactical Cut Recommendations & 1-Click Swap */}
+                {backendAnalysis?.cuts?.length > 0 && (
+                  <div className="card" style={{ border: '1px solid var(--color-orange)', backgroundColor: 'rgba(230, 126, 34, 0.05)' }}>
+                    <div className="form-label" style={{ color: 'var(--color-orange)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>✂️ Tactical Cut Recommendations ({backendAnalysis.cuts.length})</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-accent)' }}>1-Click Upgrade</span>
+                    </div>
+                    <div style={{ display: 'grid', gap: '10px', marginTop: '10px' }}>
+                      {backendAnalysis.cuts.map((cut, idx) => (
+                        <div key={idx} style={{ backgroundColor: 'var(--bg-input)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid var(--color-orange)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div>
+                              <strong style={{ color: 'var(--color-red)', fontSize: '0.95rem' }}>{cut.card}</strong>
+                              <span style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: 'var(--bg-panel)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-accent)' }}>
+                                {cut.cmc} CMC
+                              </span>
+                            </div>
+                            {cut.suggested_replacement && (
+                              <button
+                                className="btn-action"
+                                style={{
+                                  padding: '4px 12px',
+                                  fontSize: '0.75rem',
+                                  width: 'auto',
+                                  margin: 0,
+                                  backgroundColor: 'var(--accent-purple)',
+                                  borderRadius: '6px'
+                                }}
+                                onClick={() => handleSwapCard(cut.card, cut.suggested_replacement)}
+                              >
+                                Swap for <strong>{cut.suggested_replacement}</strong> ➔
+                              </button>
+                            )}
+                          </div>
+                          <p style={{ fontSize: '0.82rem', color: 'var(--text-main)', marginTop: '6px', lineHeight: '1.4' }}>
+                            {cut.reason}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Load-Bearing Pillars (Protected from Cuts) */}
+                {backendAnalysis?.protected_pillars?.length > 0 && (
+                  <div className="card" style={{ border: '1px solid rgba(39, 174, 96, 0.4)' }}>
+                    <div className="form-label" style={{ color: 'var(--color-green)' }}>
+                      🛡️ Load-Bearing Pillars (Protected from Cuts)
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                      {backendAnalysis.protected_pillars.map((pillar, i) => (
+                        <span key={i} style={{ backgroundColor: 'rgba(39, 174, 96, 0.15)', color: 'var(--color-green)', border: '1px solid rgba(39, 174, 96, 0.3)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '500' }}>
+                          ✓ {pillar}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. Mana Consistency & Hypergeometric Probability */}
+                {backendAnalysis?.deck_stats && (
+                  <div className="card">
+                    <div className="form-label">📊 Mana Consistency (Karsten Hypergeometric Probability)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', margin: '10px 0' }}>
+                      <div style={{ backgroundColor: 'var(--bg-input)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--color-green)' }}>
+                          {backendAnalysis.deck_stats.hypergeometric_consistency?.p_3_lands_turn_3 || 'N/A'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-accent)', marginTop: '2px' }}>
+                          Probability of ≥3 Lands on Turn 3
+                        </div>
+                      </div>
+                      <div style={{ backgroundColor: 'var(--bg-input)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--color-green)' }}>
+                          {backendAnalysis.deck_stats.hypergeometric_consistency?.p_land_and_ramp_turn_2 || 'N/A'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-accent)', marginTop: '2px' }}>
+                          Probability of Turn-2 Mana Ramp
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '0.8rem', marginTop: '8px', color: 'var(--text-accent)', borderTop: '1px solid var(--border-purple)', paddingTop: '8px' }}>
+                      <span><strong>Avg CMC:</strong> {backendAnalysis.deck_stats.avg_cmc}</span>
+                      <span><strong>Lands:</strong> {backendAnalysis.deck_stats.roles?.lands || 0}</span>
+                      <span><strong>Ramp:</strong> {backendAnalysis.deck_stats.roles?.ramp || 0}</span>
+                      <span><strong>Draw:</strong> {backendAnalysis.deck_stats.roles?.draw || 0}</span>
+                      <span><strong>Answers:</strong> {backendAnalysis.deck_stats.roles?.removal || 0}</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Theme Breakdowns card */}
                 <div className="card">

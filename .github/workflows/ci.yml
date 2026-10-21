@@ -1,0 +1,60 @@
+name: CI / CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-python:
+    name: Python Test Suite & Benchmark Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv and dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv pip install --system -r requirements.txt pytest httpx fastapi
+
+      - name: Run Pytest Suite
+        run: |
+          python3 -m pytest -v
+
+      - name: Execute Benchmark Evaluation Harness
+        run: |
+          python3 scripts/evaluate_engine.py
+
+  build-frontend:
+    name: Frontend Lint & Production Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run Oxlint Linter
+        working-directory: web
+        run: npm run lint
+
+      - name: Verify Production Build
+        working-directory: web
+        run: npm run build
