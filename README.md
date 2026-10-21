@@ -174,6 +174,59 @@ curl "http://localhost:8000/api/recommendations?commander=Belbe,%20Corrupted%20O
 
 ---
 
+### `POST /api/analyze`
+
+Analyzes a full 100-card Commander decklist: calculates mana curve distributions, evaluates operational resource profiles, locks load-bearing pillars, and generates tactical cut recommendations with in-color replacements.
+
+#### Request body
+
+```json
+{
+  "commander": "Belbe, Corrupted Observer",
+  "decklist": "1 Belbe, Corrupted Observer\n1 Portal to Phyrexia\n1 Triskaidekaphobia\n...",
+  "spice": 50
+}
+```
+
+#### Response structure
+
+```json
+{
+  "commander": "Belbe, Corrupted Observer",
+  "deck_stats": {
+    "card_count": 100,
+    "avg_cmc": 4.02,
+    "mana_curve": { "0": 0, "1": 8, "2": 15, "3": 10, "4": 7, "5": 2, "6+": 18 },
+    "roles": { "ramp": 11, "draw": 5, "removal": 11, "sweepers": 1, "synergy": 32, "lands": 39 },
+    "hypergeometric_consistency": {
+      "p_3_lands_turn_3": "76.1%",
+      "p_land_and_ramp_turn_2": "53.7%"
+    }
+  },
+  "resource_profile": {
+    "engine_type": "Colorless Big-Mana Acceleration",
+    "catalyst": "Early symmetric damage to opponents (pingers/burn)",
+    "yield": "Up to 6 {C} colorless mana in postcombat main phase",
+    "payoff": "High-CMC colorless bombs castable on Turns 2-3"
+  },
+  "cuts": [
+    {
+      "card": "Triskaidekaphobia",
+      "cmc": 4,
+      "reason": "Off-tempo 4-mana gimmick that does not reliably trigger Belbe on curve.",
+      "suggested_replacement": "Swiftfoot Boots"
+    }
+  ],
+  "protected_pillars": [
+    "Portal to Phyrexia", "Void Winnower", "Ulamog, the Ceaseless Hunger"
+  ],
+  "analysis_latency": "0.0018s",
+  "api_cost_usd": "$0.00"
+}
+```
+
+---
+
 ## Testing
 
 ### Python test suite

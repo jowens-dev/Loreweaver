@@ -7,8 +7,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
 # Ensure scripts directory is on Python path
 SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
@@ -16,6 +17,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 import db  # noqa: E402
+import hybrid_engine  # noqa: E402
 
 app = FastAPI(
     title="Loreweaver API",
@@ -178,3 +180,33 @@ def get_recommendations(
         for lane_key in lane_order
         if lanes[lane_key]
     ]
+
+
+class AnalyzeRequest(BaseModel):
+    commander: str = Field(default="", description="Name of the commander to build around")
+    decklist: str = Field(description="Raw text decklist with quantities and card names")
+    spice: int = Field(default=50, ge=0, le=100, description="Flavor spice dial (0=Staples, 50=Balanced, 100=Deep Cuts)")
+
+
+@app.post("/api/analyze")
+def analyze_deck_endpoint(req: AnalyzeRequest) -> dict[str, Any]:
+    """Analyze a full Commander decklist: compute mana curve, resource profile, and tactical cut recommendations."""
+    try:
+        conn = db.get_connection()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
+
+    try:
+        comm_card = None
+        if req.commander.strip():
+            canonical = db.resolve_card_name(conn, req.commander.strip())
+            comm_card = db.get_card_by_name(conn, canonical)
+
+        comm_from_deck, mainboard, unmapped = hybrid_engine.parse_decklist_text(req.decklist, conn)
+        active_commander = comm_card or comm_from_deck
+
+        analysis = hybrid_engine.analyze_deck(active_commander, mainboard, req.spice, conn)
+        analysis["unmapped_cards"] = unmapped
+        return analysis
+    finally:
+        conn.close()

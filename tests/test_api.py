@@ -54,3 +54,26 @@ def test_recommendations_endpoint_spice_shift():
 
     # They should not be identical
     assert cards_low != cards_high
+
+
+def test_analyze_deck_endpoint_belbe():
+    belbe_deck_path = REPO_ROOT / "analysis" / "golden_decks" / "belbe.txt"
+    with open(belbe_deck_path) as f:
+        deck_text = f.read()
+
+    response = client.post(
+        "/api/analyze",
+        json={"commander": "Belbe, Corrupted Observer", "decklist": deck_text, "spice": 50}
+    )
+    assert response.status_code == 200
+    data = response.json()
+
+    assert data["commander"] == "Belbe, Corrupted Observer"
+    assert data["deck_stats"]["card_count"] == 100
+    assert "Colorless Big-Mana" in data["resource_profile"]["engine_type"]
+    assert len(data["cuts"]) > 0
+
+    cut_names = [c["card"] for c in data["cuts"]]
+    assert "Triskaidekaphobia" in cut_names
+    assert "Portal to Phyrexia" not in cut_names
+    assert "Portal to Phyrexia" in data["protected_pillars"]
