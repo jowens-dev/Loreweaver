@@ -1,0 +1,82 @@
+// Commander
+1 Veyran, Voice of Duality
+
+// Core Spells & Permanents
+1 Archmage Emeritus
+1 Storm-Kiln Artist
+1 Birgi, God of Storytelling
+1 Guttersnipe
+1 Niv-Mizzet, Parun
+1 Young Pyromancer
+1 Talrand, Sky Summoner
+1 Murmuring Mystic
+1 Electrostatic Field
+1 Thermo-Alchemist
+1 Baral, Chief of Compliance
+1 Goblin Electromancer
+1 Blatant Thievery
+1 Izzet Locket
+1 Spell Swindle
+1 Divination
+1 Ponder
+1 Preordain
+1 Brainstorm
+1 Gitaxian Probe
+1 Faithless Looting
+1 Opt
+1 Serum Visions
+1 Frantic Search
+1 Expressive Iteration
+1 Chaos Warp
+1 Counterspell
+1 Negate
+1 Lightning Bolt
+1 Vandalblast
+1 Blasphemous Act
+1 Chain Lightning
+1 Abrade
+1 Grapeshot
+1 Aetherflux Reservoir
+1 Past in Flames
+1 Mizzix's Mastery
+1 Jeska's Will
+1 Windfall
+1 Solve the Equation
+1 Pongify
+1 Rapid Hybridization
+1 Arcane Denial
+1 Consider
+1 Crash Through
+1 Warlord's Fury
+1 Overmaster
+1 Slight of Hand
+1 Fierce Guardianship
+1 Deflecting Swat
+1 Cyclonic Rift
+1 Swan Song
+1 Flusterstorm
+1 Sol Ring
+1 Arcane Signet
+1 Izzet Signet
+1 Talisman of Creativity
+1 Mind Stone
+1 Thought Vessel
+1 Fellwar Stone
+1 Aria of Flame
+1 Thousand-Year Storm
+
+// Lands (37)
+1 Command Tower
+1 Steam Vents
+1 Sulfur Falls
+1 Training Center
+1 Shivan Reef
+1 Cascade Bluffs
+1 Riverglide Pathway // Lavaglide Pathway
+1 Fiery Islet
+1 Scalding Tarn
+1 Fabled Passage
+1 Reliquary Tower
+1 Exotic Orchard
+12 Island
+13 Mountain

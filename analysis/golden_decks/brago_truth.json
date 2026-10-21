@@ -1,0 +1,23 @@
+{
+  "deck_name": "brago",
+  "commander": "Brago, King Eternal",
+  "color_identity": [
+    "W",
+    "U"
+  ],
+  "archetype": "Blink / Mass ETB Flicker",
+  "core_engine": "Connecting with Brago blinks any number of nonland permanents, untapping rocks (Peregrine Drake/mana rocks) and reusing card-drawing/removal ETB triggers (Mulldrifter, Reflector Mage).",
+  "load_bearing_pillars": [
+    "Strionic Resonator",
+    "Archaeomancer",
+    "Peregrine Drake",
+    "Mulldrifter",
+    "Reflector Mage"
+  ],
+  "expert_cut_candidates": [
+    "Azorius Locket",
+    "Font of Fortunes",
+    "Banishment",
+    "Pacifism"
+  ]
+}

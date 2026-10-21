@@ -1,0 +1,23 @@
+{
+  "deck_name": "aesi",
+  "commander": "Aesi, Tyrant of Gyre Strait",
+  "color_identity": [
+    "G",
+    "U"
+  ],
+  "archetype": "Landfall / Mass Resource Acceleration",
+  "core_engine": "Playing multiple lands per turn triggers Aesi for mass card draw, chain-drawing ramp spells into Scute Swarm, Rampaging Baloths, and Avenger of Zendikar finishers.",
+  "load_bearing_pillars": [
+    "Lotus Cobra",
+    "Tatyova, Benthic Druid",
+    "Scute Swarm",
+    "Rampaging Baloths",
+    "Avenger of Zendikar"
+  ],
+  "expert_cut_candidates": [
+    "Simic Locket",
+    "Divination",
+    "Brambleweft Behemoth",
+    "Naturalize"
+  ]
+}

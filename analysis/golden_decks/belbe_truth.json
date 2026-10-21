@@ -1,0 +1,74 @@
+{
+  "deck_name": "belbe",
+  "commander": "Belbe, Corrupted Observer",
+  "color_identity": ["B", "G"],
+  "archetype": "Colorless Big-Mana Acceleration / Symmetric Burn Exploitation",
+  "core_engine": "Precombat damage to opponents triggers Belbe postcombat main phase colorless mana yield ({C}{C} per opponent who lost life, up to 6 {C}) to cast high-CMC colorless threats on early turns.",
+  "engine_stages": {
+    "trigger": "Early pingers and group burn (Night Market Lookout, Pulse Tracker, Vicious Conquistador, Leechridden Swamp)",
+    "converter": "Belbe, Corrupted Observer postcombat main phase mana yield",
+    "payoff": "High-CMC colorless bombs and artifact finishers (Portal to Phyrexia, Ulamog, Wurmcoil Engine, Cityscape Leveler)"
+  },
+  "load_bearing_pillars": [
+    "Portal to Phyrexia",
+    "Ulamog, the Ceaseless Hunger",
+    "Void Winnower",
+    "Cityscape Leveler",
+    "Night Market Lookout"
+  ],
+  "expert_cut_candidates": [
+    "Triskaidekaphobia",
+    "Deathrite Shaman",
+    "Llanowar Elves",
+    "Chromatic Orrery"
+  ],
+  "expected_additions": [
+    {
+      "card": "Swiftfoot Boots",
+      "replaces": "Triskaidekaphobia",
+      "rationale": "Provides hexproof protection for Belbe against targeted removal and haste to enable immediate attacks from pingers."
+    },
+    {
+      "card": "Eternal Witness",
+      "replaces": "Deathrite Shaman",
+      "rationale": "Provides critical graveyard recursion for high-value payoffs removed by opponents, replacing an unreliable Turn-2 condition."
+    }
+  ],
+  "specific_checks": [
+    {
+      "id": "protect_portal_to_phyrexia",
+      "card": "Portal to Phyrexia",
+      "must_not_cut": true,
+      "description": "Primary high-CMC colorless payoff enabled by Belbe trigger."
+    },
+    {
+      "id": "cut_triskaidekaphobia",
+      "card": "Triskaidekaphobia",
+      "must_cut": true,
+      "description": "Off-tempo 4-mana gimmick that does not reliably trigger Belbe on curve."
+    },
+    {
+      "id": "cut_llanowar_elves",
+      "card": "Llanowar Elves",
+      "must_cut": true,
+      "description": "Fragile 1-mana dork redundant next to Belbe's 6-mana yield and vulnerable to sweepers."
+    },
+    {
+      "id": "cut_chromatic_orrery",
+      "card": "Chromatic Orrery",
+      "must_cut": true,
+      "description": "Redundant, non-disruptive 7-mana ramp that does not advance the deck's win condition."
+    },
+    {
+      "id": "reject_karn_legacy_reforged",
+      "card": "Karn, Legacy Reforged",
+      "must_reject": true,
+      "description": "Adds mana during upkeep that empties before main phase (CR 106.4) and restricts mana to artifacts."
+    },
+    {
+      "id": "flag_diabolic_tutor_pips",
+      "card": "Diabolic Tutor",
+      "description": "Requires {2}{B}{B} colored mana pips which Belbe's colorless yield cannot pay, failing calibration if recommended over generic {6} Conduit of Ruin."
+    }
+  ]
+}

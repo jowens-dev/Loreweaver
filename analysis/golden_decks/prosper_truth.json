@@ -1,0 +1,63 @@
+{
+  "deck_name": "prosper",
+  "commander": "Prosper, Tome-Bound",
+  "color_identity": ["B", "R"],
+  "archetype": "Exile-Cast / Treasure Synergies",
+  "core_engine": "Playing cards from exile triggers Prosper to create Treasure tokens, which fuel further impulse draws and trigger high-density artifact sacrifice/drain payoffs.",
+  "engine_stages": {
+    "trigger": "Impulse exile draw engines (Light Up the Stage, Reckless Impulse, Passionate Archaeologist, Outpost Siege)",
+    "converter": "Prosper, Tome-Bound (creates Treasure whenever playing cards from exile) + Xorn / Academy Manufactor token amplification",
+    "payoff": "Treasure sacrifice and ping drain (Marionette Master, Mayhem Devil, Reckless Fireweaver, Mirkwood Bats, Disciple of the Vault)"
+  },
+  "load_bearing_pillars": [
+    "Birgi, God of Storytelling",
+    "Academy Manufactor",
+    "Passionate Archaeologist",
+    "Xorn",
+    "Marionette Master"
+  ],
+  "expert_cut_candidates": [
+    "Apex of Power",
+    "Shiny Impetus",
+    "Rakdos Locket",
+    "Throes of Chaos"
+  ],
+  "expected_additions": [
+    {
+      "card": "Jeska's Will",
+      "replaces": "Apex of Power",
+      "rationale": "Provides immediate impulse exile advantage and red mana ritual at a playable 3-mana curve point rather than an uncastable 10-mana sorcery."
+    },
+    {
+      "card": "Deadly Rollick",
+      "replaces": "Shiny Impetus",
+      "rationale": "Provides free instant-speed removal with commander out, replacing a low-impact combat goad aura."
+    }
+  ],
+  "specific_checks": [
+    {
+      "id": "protect_birgi",
+      "card": "Birgi, God of Storytelling",
+      "must_not_cut": true,
+      "description": "Essential mana engine that refunds red mana on every impulse cast."
+    },
+    {
+      "id": "protect_academy_manufactor",
+      "card": "Academy Manufactor",
+      "must_not_cut": true,
+      "description": "Triples token generation by converting each Treasure into Clue, Food, and Treasure."
+    },
+    {
+      "id": "cut_apex_of_power",
+      "card": "Apex of Power",
+      "must_cut": true,
+      "description": "10 CMC sorcery that represents massive curve friction and frequently rots in hand."
+    },
+    {
+      "id": "cut_rakdos_locket",
+      "card": "Rakdos Locket",
+      "must_cut": true,
+      "description": "Suboptimal 3-mana rock with high sacrifice activation cost when cheaper rocks and treasure ramp abound."
+    }
+  ]
+}

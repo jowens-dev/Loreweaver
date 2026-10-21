@@ -1,0 +1,23 @@
+{
+  "deck_name": "sythis",
+  "commander": "Sythis, Harvest's Hand",
+  "color_identity": [
+    "G",
+    "W"
+  ],
+  "archetype": "Enchantress / Constellation Storm",
+  "core_engine": "Casting low-cost enchantment ramp (Wild Growth, Utopia Sprawl) triggers Sythis draw and lifegain, chaining through the deck until Sanctum Weaver and Hallowed Haunting create an overwhelming board.",
+  "load_bearing_pillars": [
+    "Enchantress's Presence",
+    "Argothian Enchantress",
+    "Sanctum Weaver",
+    "Destiny Spinner",
+    "Hallowed Haunting"
+  ],
+  "expert_cut_candidates": [
+    "Selesnya Locket",
+    "Bramblecrush",
+    "Healing Salve",
+    "Plummet"
+  ]
+}

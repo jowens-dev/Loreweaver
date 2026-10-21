@@ -1,0 +1,96 @@
+// Commander
+1 Prosper, Tome-Bound
+
+// Creatures (Pillars & Treasure Drain Payoffs)
+1 Birgi, God of Storytelling
+1 Academy Manufactor
+1 Xorn
+1 Marionette Master
+1 Mayhem Devil
+1 Reckless Fireweaver
+1 Disciple of the Vault
+1 Nadier's Nightblade
+1 Professional Face-Breaker
+1 Grim Hireling
+1 Mirkwood Bats
+
+// Creatures (Impulse & Exilers)
+1 Laelia, the Blade Reforged
+1 Wild-Magic Sorcerer
+1 Tectonic Giant
+1 Dire Fleet Daredevil
+1 Dream Devourer
+1 Goldspan Dragon
+1 Mahadi, Emporium Master
+1 Florian, Voldaren Scion
+1 Kalain, Reclusive Painter
+1 Storm-Kiln Artist
+1 Author of Shadows
+
+// Target Cuts (Test Slots)
+1 Apex of Power
+1 Shiny Impetus
+1 Rakdos Locket
+1 Throes of Chaos
+
+// Instants & Sorceries (Exile, Draw & Interaction)
+1 Jeska's Will
+1 Deadly Rollick
+1 Chaos Warp
+1 Bedevil
+1 Feed the Swarm
+1 Terminate
+1 Infernal Grasp
+1 Vandalblast
+1 Blasphemous Act
+1 Toxic Deluge
+1 Light Up the Stage
+1 Ignite the Future
+1 Night's Whisper
+1 Read the Bones
+1 Demonic Tutor
+1 Hurl Through Hell
+1 Commune with Lava
+1 Reckless Impulse
+1 Wrenn's Resolve
+1 Faithless Looting
+
+// Artifacts (Mana & Treasure Synergy)
+1 Sol Ring
+1 Arcane Signet
+1 Rakdos Signet
+1 Talisman of Indulgence
+1 Mind Stone
+1 Fellwar Stone
+1 Idol of Oblivion
+1 Swiftfoot Boots
+1 Lightning Greaves
+
+// Enchantments (Impulse & Value)
+1 Passionate Archaeologist
+1 Valakut Exploration
+1 Stolen Strategy
+1 Outpost Siege
+1 Share the Spoils
+1 Theater of Horrors
+1 Black Market Connections
+1 Revel in Riches
+
+// Lands (36)
+1 Command Tower
+1 Blood Crypt
+1 Luxury Suite
+1 Dragonskull Summit
+1 Smoldering Marsh
+1 Sulfurous Springs
+1 Graven Cairns
+1 Blightstep Pathway // Spirestep Pathway
+1 Bloodstained Mire
+1 Fabled Passage
+1 Bojuka Bog
+1 Takenuma, Abandoned Mire
+1 Sokenzan, Crucible of Defiance
+1 Reliquary Tower
+1 Exotic Orchard
+10 Swamp
+11 Mountain

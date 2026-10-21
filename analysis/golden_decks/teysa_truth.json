@@ -1,0 +1,23 @@
+{
+  "deck_name": "teysa",
+  "commander": "Teysa Karlov",
+  "color_identity": [
+    "W",
+    "B"
+  ],
+  "archetype": "Aristocrats / Death Trigger Doubler",
+  "core_engine": "Sacrificing recurring creatures triggers death triggers twice via Teysa Karlov, draining opponents through Blood Artist/Cutthroat while Pitiless Plunderer refunds mana.",
+  "load_bearing_pillars": [
+    "Blood Artist",
+    "Zulaport Cutthroat",
+    "Pitiless Plunderer",
+    "Cruel Celebrant",
+    "Skullclamp"
+  ],
+  "expert_cut_candidates": [
+    "Open the Armory",
+    "Orzhov Locket",
+    "Vampire Nighthawk",
+    "Boon Reflection"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "deck_name": "veyran",
+  "commander": "Veyran, Voice of Duality",
+  "color_identity": [
+    "U",
+    "R"
+  ],
+  "archetype": "Spellslinger / Magecraft Multiplier",
+  "core_engine": "Casting cheap instant/sorcery cantrips triggers magecraft triggers twice via Veyran, generating double mana (Storm-Kiln) and double cards (Archmage) to storm out.",
+  "load_bearing_pillars": [
+    "Archmage Emeritus",
+    "Storm-Kiln Artist",
+    "Birgi, God of Storytelling",
+    "Guttersnipe",
+    "Niv-Mizzet, Parun"
+  ],
+  "expert_cut_candidates": [
+    "Blatant Thievery",
+    "Izzet Locket",
+    "Spell Swindle",
+    "Divination"
+  ]
+}

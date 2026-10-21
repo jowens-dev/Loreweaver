@@ -1,0 +1,82 @@
+// Commander
+1 Teysa Karlov
+
+// Core Spells & Permanents
+1 Blood Artist
+1 Zulaport Cutthroat
+1 Pitiless Plunderer
+1 Cruel Celebrant
+1 Skullclamp
+1 Viscera Seer
+1 Carrion Feeder
+1 Woe Strider
+1 Yahenni, Undying Partisan
+1 Reassembling Skeleton
+1 Gravecrawler
+1 Midnight Reaper
+1 Grim Haruspex
+1 Morbid Opportunist
+1 Ayara, First of Locthwain
+1 Elenda, the Dusk Rose
+1 Kokusho, the Evening Star
+1 Open the Armory
+1 Orzhov Locket
+1 Vampire Nighthawk
+1 Boon Reflection
+1 Swords to Plowshares
+1 Path to Exile
+1 Anguished Unmaking
+1 Toxic Deluge
+1 Sol Ring
+1 Arcane Signet
+1 Orzhov Signet
+1 Talisman of Hierarchy
+1 Fellwar Stone
+1 Mind Stone
+1 Thought Vessel
+1 Ashnod's Altar
+1 Phyrexian Altar
+1 Smothering Tithe
+1 Anointed Procession
+1 Bastion of Remembrance
+1 Black Market
+1 Dictate of Erebos
+1 Grave Pact
+1 Lethal Scheme
+1 Deadly Rollick
+1 Damn
+1 Vindicate
+1 Kaya's Wrath
+1 Lingering Souls
+1 Dread Return
+1 Victimize
+1 Sign in Blood
+1 Night's Whisper
+1 Village Rites
+1 Corrupted Conviction
+1 Plumb the Forbidden
+1 Costly Plunder
+1 Read the Bones
+1 Priest of Forgotten Gods
+1 Bloodghast
+1 Nether Traitor
+1 Suture Priest
+1 Corpse Knight
+1 Teysa, Orzhov Scion
+
+// Lands (38)
+1 Command Tower
+1 Godless Shrine
+1 Isolated Chapel
+1 Vault of Champions
+1 Caves of Koilos
+1 Fetid Heath
+1 Brightclimb Pathway // Grimclimb Pathway
+1 Silent Clearing
+1 Marsh Flats
+1 Fabled Passage
+1 Bojuka Bog
+1 High Market
+1 Phyrexian Tower
+12 Plains
+13 Swamp
