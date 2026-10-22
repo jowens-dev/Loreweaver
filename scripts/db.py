@@ -52,6 +52,8 @@ def parse_card_row(row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
     card_dict["keywords"] = json.loads(card_dict["keywords"]) if card_dict.get("keywords") else []
     card_dict["colors"] = [c.strip() for c in card_dict["colors"].split(",") if c.strip()] if card_dict.get("colors") else []
     card_dict["color_identity"] = [c.strip() for c in card_dict["color_identity"].split(",") if c.strip()] if card_dict.get("color_identity") else []
+    card_dict["is_commander"] = int(card_dict.get("is_commander", 0))
+    card_dict["commander_legal"] = int(card_dict.get("commander_legal", 0))
     return card_dict
 
 
@@ -63,7 +65,8 @@ def get_card_by_name(conn: sqlite3.Connection, name: str) -> dict[str, Any] | No
         """
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                subtypes, colors, color_identity, oracle_text, flavor_text,
-               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+               is_commander, commander_legal
         FROM cards
         WHERE name_lower = ?
         """,
@@ -104,10 +107,11 @@ def get_cards_by_identity(
         f"""
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                subtypes, colors, color_identity, oracle_text, flavor_text,
-               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+               is_commander, commander_legal
         FROM cards
         WHERE color_identity IN ({placeholders})
-          AND set_type NOT IN ('funny', 'alchemy')
+          AND commander_legal = 1
           AND edhrec_rank IS NOT NULL
         ORDER BY edhrec_rank ASC
         LIMIT ?
@@ -128,8 +132,7 @@ def search_commanders(
     cursor = conn.cursor()
     params: list[Any] = []
     conditions = [
-        "(type_line LIKE '%Legendary%Creature%' OR oracle_text LIKE '%can be your commander%')",
-        "set_type NOT IN ('funny', 'alchemy')",
+        "is_commander = 1",
         "edhrec_rank IS NOT NULL"
     ]
 
@@ -146,7 +149,8 @@ def search_commanders(
     sql = f"""
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                subtypes, colors, color_identity, oracle_text, flavor_text,
-               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+               is_commander, commander_legal
         FROM cards
         WHERE {' AND '.join(conditions)}
         ORDER BY edhrec_rank ASC
@@ -170,11 +174,12 @@ def search_cards_predictive(
 
     cursor = conn.cursor()
     conditions = [
-        "set_type NOT IN ('funny', 'alchemy')",
         "edhrec_rank IS NOT NULL"
     ]
     if commanders_only:
-        conditions.append("(type_line LIKE '%Legendary%Creature%' OR oracle_text LIKE '%can be your commander%')")
+        conditions.append("is_commander = 1")
+    else:
+        conditions.append("commander_legal = 1")
 
     conditions.append("(name_lower LIKE ? OR name_lower LIKE ?)")
     params = [f"{clean_q}%", f"% {clean_q}%"]
@@ -182,7 +187,8 @@ def search_cards_predictive(
     sql = f"""
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                subtypes, colors, color_identity, oracle_text, flavor_text,
-               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+               is_commander, commander_legal
         FROM cards
         WHERE {' AND '.join(conditions)}
         ORDER BY 

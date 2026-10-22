@@ -60,7 +60,9 @@ def create_schema(connection: sqlite3.Connection) -> None:
             reprint INTEGER,
             keywords TEXT,
             image_url TEXT,
-            edhrec_rank INTEGER
+            edhrec_rank INTEGER,
+            is_commander INTEGER DEFAULT 0,
+            commander_legal INTEGER DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS card_aliases (
@@ -79,6 +81,8 @@ def create_schema(connection: sqlite3.Connection) -> None:
         CREATE INDEX IF NOT EXISTS idx_cards_name_lower ON cards(name_lower);
         CREATE INDEX IF NOT EXISTS idx_cards_color_identity ON cards(color_identity);
         CREATE INDEX IF NOT EXISTS idx_cards_edhrec_rank ON cards(edhrec_rank);
+        CREATE INDEX IF NOT EXISTS idx_cards_is_commander ON cards(is_commander);
+        CREATE INDEX IF NOT EXISTS idx_cards_commander_legal ON cards(commander_legal);
         CREATE INDEX IF NOT EXISTS idx_aliases_canonical ON card_aliases(canonical_name_lower);
     """)
     connection.commit()
@@ -113,8 +117,9 @@ def ingest_oracle_data(json_path: Path, db_path: Path) -> tuple[int, int]:
         INSERT OR REPLACE INTO cards (
             name, name_lower, mana_cost, cmc, type_line, types, subtypes,
             colors, color_identity, oracle_text, flavor_text, set_code,
-            set_type, layout, reprint, keywords, image_url, edhrec_rank
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            set_type, layout, reprint, keywords, image_url, edhrec_rank,
+            is_commander, commander_legal
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
 
     card_rows = []
@@ -186,6 +191,34 @@ def ingest_oracle_data(json_path: Path, db_path: Path) -> tuple[int, int]:
             front_face = name.split(" // ")[0].strip().lower()
             aliases.append((front_face, name_lower))
 
+        # Check format legality and commander eligibility (MTG CR 903.3 & 712.8a)
+        cmd_legality = card.get("legalities", {}).get("commander", "not_legal")
+        commander_legal = 1 if cmd_legality == "legal" else 0
+
+        is_commander = 0
+        if commander_legal == 1:
+            if "card_faces" in card and isinstance(card["card_faces"], list) and card["card_faces"]:
+                front = card["card_faces"][0]
+                front_tl = front.get("type_line", "")
+                front_ot = front.get("oracle_text", "").lower()
+                root_ot = card.get("oracle_text", "").lower()
+                if (
+                    ("Legendary" in front_tl and "Creature" in front_tl) or
+                    ("can be your commander" in front_ot) or
+                    ("can be your commander" in root_ot) or
+                    (name == "Grist, the Hunger Tide")
+                ):
+                    is_commander = 1
+            else:
+                tl = card.get("type_line", "")
+                ot = card.get("oracle_text", "").lower()
+                if (
+                    ("Legendary" in tl and "Creature" in tl) or
+                    ("can be your commander" in ot) or
+                    (name == "Grist, the Hunger Tide")
+                ):
+                    is_commander = 1
+
         card_rows.append((
             name,
             name_lower,
@@ -204,7 +237,9 @@ def ingest_oracle_data(json_path: Path, db_path: Path) -> tuple[int, int]:
             reprint,
             json.dumps(raw_keywords),
             image_url,
-            edhrec_rank
+            edhrec_rank,
+            is_commander,
+            commander_legal
         ))
 
     print(f"Inserting {len(card_rows)} tournament-legal card records into SQLite...")

@@ -334,10 +334,10 @@ def find_matching_commander(
     sql = f"""
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                subtypes, colors, color_identity, oracle_text, flavor_text,
-               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+               set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+               is_commander, commander_legal
         FROM cards
-        WHERE (type_line LIKE '%Legendary%Creature%' OR oracle_text LIKE '%can be your commander%')
-          AND set_type NOT IN ('funny', 'alchemy')
+        WHERE is_commander = 1
           AND edhrec_rank IS NOT NULL
           {color_filter}
         ORDER BY edhrec_rank ASC
@@ -688,10 +688,11 @@ def query_targeted_synergy_candidates(
         sql = f"""
             SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                    subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
             FROM cards
             WHERE color_identity IN ({placeholders})
-              AND set_type NOT IN ('funny', 'alchemy')
+              AND commander_legal = 1
               AND edhrec_rank IS NOT NULL
               AND (
                 oracle_text LIKE '%each opponent loses%'
@@ -711,10 +712,11 @@ def query_targeted_synergy_candidates(
         sql = f"""
             SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                    subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
             FROM cards
             WHERE color_identity IN ({placeholders})
-              AND set_type NOT IN ('funny', 'alchemy')
+              AND commander_legal = 1
               AND edhrec_rank IS NOT NULL
               AND (
                 oracle_text LIKE '%as though they had flash%'
@@ -729,10 +731,11 @@ def query_targeted_synergy_candidates(
         sql = f"""
             SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                    subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
             FROM cards
             WHERE color_identity IN ({placeholders})
-              AND set_type NOT IN ('funny', 'alchemy')
+              AND commander_legal = 1
               AND edhrec_rank IS NOT NULL
               AND cmc >= 6
               AND (types LIKE '%artifact%' OR subtypes LIKE '%eldrazi%' OR color_identity = '')
@@ -746,10 +749,11 @@ def query_targeted_synergy_candidates(
         sql = f"""
             SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
                    subtypes, colors, color_identity, oracle_text, flavor_text,
-                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
             FROM cards
             WHERE color_identity IN ({placeholders})
-              AND set_type NOT IN ('funny', 'alchemy')
+              AND commander_legal = 1
               AND edhrec_rank IS NOT NULL
               AND (
                 oracle_text LIKE '%whenever another creature dies%'

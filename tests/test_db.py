@@ -67,3 +67,76 @@ def test_cards_by_identity_golgari():
         assert set(card["color_identity"]).issubset(allowed), (
             f"Found illegal card {card['name']} with identity {card['color_identity']} in BG pool"
         )
+
+
+def test_commander_legality_and_dfc_rules():
+    """Verify that only cards whose FRONT face is a legal commander are marked is_commander=1."""
+    conn = db.get_connection()
+
+    # DFCs whose front face is NOT a legendary creature
+    invalid_fronts = [
+        "Westvale Abbey // Ormendahl, Profane Prince",
+        "Nezumi Graverobber // Nighteyes the Desecrator",
+        "Budoka Gardener // Dokai, Weaver of Life",
+        "Bushi Tenderfoot // Kenzo the Hardhearted",
+        "Invasion of Ikoria // Zilortha, Apex of Ikoria",
+        "The Legend of Kuruk // Avatar Kuruk",
+        "Elbrus, the Binding Blade // Withengar Unbound"
+    ]
+    for name in invalid_fronts:
+        card = db.get_card_by_name(conn, name)
+        assert card is not None, f"Card {name} should exist in database"
+        assert card["is_commander"] == 0, f"{name} should NOT be eligible as a commander"
+        assert card["commander_legal"] == 1, f"{name} should be legal in the 99"
+
+    # DFCs whose front face IS a legendary creature
+    valid_commanders = [
+        "Extus, Oriq Overlord // Awaken the Blood Avatar",
+        "Ral, Monsoon Mage // Ral, Leyline Prodigy",
+        "Tamiyo, Inquisitive Student // Tamiyo, Seasoned Scholar",
+        "Belbe, Corrupted Observer",
+        "Atraxa, Praetors' Voice",
+        "Grist, the Hunger Tide"
+    ]
+    for name in valid_commanders:
+        card = db.get_card_by_name(conn, name)
+        assert card is not None, f"Card {name} should exist in database"
+        assert card["is_commander"] == 1, f"{name} MUST be eligible as a commander"
+        assert card["commander_legal"] == 1, f"{name} must be format-legal in Commander"
+
+    # Banned cards
+    banned_cards = [
+        "Golos, Tireless Pilgrim",
+        "Nadu, Winged Wisdom",
+        "Leovold, Emissary of Trest",
+        "Mana Crypt",
+        "Jeweled Lotus"
+    ]
+    for name in banned_cards:
+        card = db.get_card_by_name(conn, name)
+        assert card is not None, f"Card {name} should exist in database"
+        assert card["is_commander"] == 0, f"{name} is banned and cannot be commander"
+        assert card["commander_legal"] == 0, f"{name} is banned in Commander format"
+
+    conn.close()
+
+
+def test_predictive_search_filters_illegal_commanders():
+    """Verify predictive search endpoint logic excludes illegal commanders."""
+    conn = db.get_connection()
+
+    # Searching 'west' with commanders_only=True should NOT return Westvale Abbey
+    cmd_results = db.search_cards_predictive(conn, "west", commanders_only=True, limit=10)
+    cmd_names = [c["name"] for c in cmd_results]
+    assert not any("Westvale" in n for n in cmd_names), "Westvale Abbey must not appear in commander search"
+
+    # Searching 'west' with commanders_only=False should return Westvale Abbey (legal in 99)
+    all_results = db.search_cards_predictive(conn, "west", commanders_only=False, limit=10)
+    all_names = [c["name"] for c in all_results]
+    assert any("Westvale" in n for n in all_names), "Westvale Abbey should appear in card search for 99"
+
+    # Searching banned cards with commanders_only=False should NEVER return them
+    lotus_results = db.search_cards_predictive(conn, "jeweled lotus", commanders_only=False, limit=5)
+    assert len(lotus_results) == 0, "Banned Jeweled Lotus must never appear in search"
+
+    conn.close()
