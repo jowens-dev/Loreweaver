@@ -19,10 +19,12 @@ try:
     from scripts import db
     from scripts.hybrid_engine import detect_resource_profile
     from scripts.math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
+    from scripts import deck_exporter
 except ImportError:
     import db
     from hybrid_engine import detect_resource_profile
     from math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
+    import deck_exporter
 
 # --- COLOR & ALIAS DICTIONARIES ---
 COLOR_MAP: dict[str, set[str]] = {
@@ -1308,5 +1310,18 @@ def build_deck(
             "synergy": categorized["synergy"],
             "lands": categorized["lands"]
         },
-        "decklist_text": export_decklist
+        "decklist_text": export_decklist,
+        "exports": deck_exporter.export_all_formats({
+            "commanders": commanders,
+            "commander": primary_commander,
+            "categories": {
+                "commander": commanders,
+                "ramp": categorized["ramp"],
+                "draw": categorized["draw"],
+                "removal": categorized["removal"],
+                "win_con": categorized["win_con"],
+                "synergy": categorized["synergy"],
+                "lands": categorized["lands"]
+            }
+        })
     }

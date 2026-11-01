@@ -4,6 +4,8 @@ import {
   Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers
 } from 'lucide-react';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
+import DeckExportModal from './components/DeckExportModal';
+import { exportToMoxfield, exportToArchidekt } from './utils/deckExport';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -93,7 +95,10 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
   const [error, setError] = useState(null);
   const [deckResult, setDeckResult] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [copied, setCopied] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportModalFormat, setExportModalFormat] = useState('moxfield');
+  const [copiedMoxfield, setCopiedMoxfield] = useState(false);
+  const [copiedArchidekt, setCopiedArchidekt] = useState(false);
 
   const toggleColor = (pip) => {
     if (pip === 'C') {
@@ -145,25 +150,22 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     }
   };
 
-  const handleCopyClipboard = () => {
-    if (!deckResult?.decklist_text) return;
-    navigator.clipboard.writeText(deckResult.decklist_text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+  const handleFastCopyMoxfield = () => {
+    if (!deckResult) return;
+    const text = deckResult.exports?.moxfield || exportToMoxfield(deckResult);
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedMoxfield(true);
+    setTimeout(() => setCopiedMoxfield(false), 2400);
   };
 
-  const handleDownload = () => {
-    if (!deckResult?.decklist_text) return;
-    const blob = new Blob([deckResult.decklist_text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const safeName = (deckResult.commander?.name || 'deck').replace(/[^a-zA-Z0-9_-]/g, '_');
-    link.href = url;
-    link.download = `${safeName}_bracket_${bracket}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleFastCopyArchidekt = () => {
+    if (!deckResult) return;
+    const text = deckResult.exports?.archidekt || exportToArchidekt(deckResult);
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedArchidekt(true);
+    setTimeout(() => setCopiedArchidekt(false), 2400);
   };
 
   const handleSendToAnalyzer = () => {
@@ -611,43 +613,100 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
               <div className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
-                    onClick={handleCopyClipboard}
+                    onClick={handleFastCopyMoxfield}
                     className="btn btn-secondary"
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
-                  >
-                    {copied ? <Check size={14} style={{ color: '#22c55e' }} /> : <Copy size={14} />}
-                    <span>{copied ? 'Copied!' : 'Copy 100 Cards'}</span>
-                  </button>
-                  <button
-                    onClick={handleDownload}
-                    className="btn btn-secondary"
-                    style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}
-                  >
-                    <Download size={14} />
-                    <span>Save .txt</span>
-                  </button>
-                </div>
-                {onAnalyzeDeck && (
-                  <button
-                    onClick={handleSendToAnalyzer}
-                    className="btn"
                     style={{ 
-                      background: 'rgba(56, 189, 248, 0.2)', 
-                      border: '1px solid #38bdf8', 
-                      color: '#38bdf8', 
-                      padding: '6px 8px', 
+                      flex: 1, 
+                      padding: '7px 8px', 
                       fontSize: '0.78rem', 
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center', 
-                      gap: '4px',
-                      cursor: 'pointer'
+                      gap: '4px', 
+                      cursor: 'pointer',
+                      border: copiedMoxfield ? '1px solid #22c55e' : '1px solid var(--border-purple)',
+                      background: copiedMoxfield ? 'rgba(34, 197, 94, 0.2)' : 'var(--bg-card)',
+                      transition: 'all 0.15s ease'
                     }}
+                    title="Copy 100 cards formatted for Moxfield (*CMDR* tag)"
                   >
-                    <ExternalLink size={14} />
-                    <span>Audit in Deck Analyzer</span>
+                    {copiedMoxfield ? <Check size={14} style={{ color: '#22c55e' }} /> : <Copy size={14} />}
+                    <span>{copiedMoxfield ? 'Copied Moxfield!' : 'Copy Moxfield'}</span>
                   </button>
-                )}
+
+                  <button
+                    onClick={handleFastCopyArchidekt}
+                    className="btn btn-secondary"
+                    style={{ 
+                      flex: 1, 
+                      padding: '7px 8px', 
+                      fontSize: '0.78rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '4px', 
+                      cursor: 'pointer',
+                      border: copiedArchidekt ? '1px solid #22c55e' : '1px solid var(--border-purple)',
+                      background: copiedArchidekt ? 'rgba(34, 197, 94, 0.2)' : 'var(--bg-card)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Copy 100 cards formatted for Archidekt ([Ramp], [Removal] tags)"
+                  >
+                    {copiedArchidekt ? <Check size={14} style={{ color: '#22c55e' }} /> : <Copy size={14} />}
+                    <span>{copiedArchidekt ? 'Copied Archidekt!' : 'Copy Archidekt'}</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      setExportModalFormat('moxfield');
+                      setIsExportModalOpen(true);
+                    }}
+                    className="btn"
+                    style={{ 
+                      flex: 1,
+                      padding: '7px 8px', 
+                      fontSize: '0.78rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '4px', 
+                      cursor: 'pointer',
+                      background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.3), rgba(56, 189, 248, 0.25))',
+                      border: '1px solid #c084fc',
+                      color: 'var(--text-white)',
+                      fontWeight: '600'
+                    }}
+                    title="Open export modal for MTGO .dec, CSV, TXT, and options"
+                  >
+                    <Download size={14} />
+                    <span>Export Options...</span>
+                  </button>
+
+                  {onAnalyzeDeck && (
+                    <button
+                      onClick={handleSendToAnalyzer}
+                      className="btn"
+                      style={{ 
+                        flex: 1,
+                        background: 'rgba(56, 189, 248, 0.15)', 
+                        border: '1px solid #38bdf8', 
+                        color: '#38bdf8', 
+                        padding: '7px 8px', 
+                        fontSize: '0.78rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ExternalLink size={14} />
+                      <span>Audit in Analyzer</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -788,6 +847,14 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
           </div>
         )}
       </div>
+
+      {/* 100-Card Deck Export & Integrations Modal */}
+      <DeckExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        deck={deckResult}
+        initialFormat={exportModalFormat}
+      />
     </div>
   );
 }
