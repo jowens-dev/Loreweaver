@@ -125,6 +125,8 @@ export function analyzeStress(deckNames, db, commanderCardInfo = null, cohesionS
   let spellsCount = 0;
   let rampCount = 0;
   let drawCount = 0;
+  let disjointRampCount = 0;
+  let disjointDrawCount = 0;
   let protectionCount = 0;
   
   let creaturesCount = 0;
@@ -157,8 +159,15 @@ export function analyzeStress(deckNames, db, commanderCardInfo = null, cohesionS
       landsCount++;
     } else {
       spellsCount++;
-      if (isRamp(card)) rampCount++;
-      if (isDraw(card)) drawCount++;
+      const rampMatch = isRamp(card);
+      const drawMatch = isDraw(card);
+      if (rampMatch) rampCount++;
+      if (drawMatch) drawCount++;
+      if (rampMatch) {
+        disjointRampCount++;
+      } else if (drawMatch) {
+        disjointDrawCount++;
+      }
       if (isProtection(card)) protectionCount++;
       if (isMultiplayerScaling(card)) {
         scalingSpells.push(card.name);
@@ -245,14 +254,21 @@ export function analyzeStress(deckNames, db, commanderCardInfo = null, cohesionS
     const dominantTheme = cohesionStats.dominant_theme;
     if (dominantTheme && dominantTheme !== "None") {
       const themeKeywords = {
+        "Group Slug / Bleed": ["opponent loses", "damage", "lost life", "bleed", "player loses"],
+        "Big Mana / Colorless": ["colorless", "adds", "eldrazi", "mana"],
+        "Flash / Instant Timing": ["flash", "instant"],
+        "Enchantress / Constellation": ["enchantment", "constellation", "aura"],
         "Landfall / Lands": ["land", "landfall"],
         "Sacrifice / Aristocrats": ["sacrifice", "dies"],
         "Graveyard / Reanimator": ["graveyard", "reanimate", "undergrowth", "dredge"],
         "Blink / Flicker": ["exile", "flicker", "blink", "enters"],
-        "Tokens": ["token"],
+        "Tokens": ["token", "populate"],
         "Counters (+1/+1 / Proliferate)": ["counter", "proliferate"],
-        "Spellslinger": ["instant", "sorcery"],
+        "Spellslinger": ["instant", "sorcery", "magecraft"],
         "Artifacts / Voltron": ["artifact", "equip", "aura"],
+        "Wheel / Draw-Punish": ["draw", "discard", "wheel"],
+        "Stax / Resource Denial": ["can't", "cost", "tax", "tapped", "rule of law"],
+        "Combat / Extra Turns": ["combat", "attack", "turn", "strike"],
         "Lifegain": ["life", "lifelink"],
         "Discard / Madness": ["discard", "cycling", "madness"],
         "Planeswalkers / Superfriends": ["planeswalker"]
@@ -279,8 +295,8 @@ export function analyzeStress(deckNames, db, commanderCardInfo = null, cohesionS
   const cdiRating = cdiScore >= 60 ? "HIGH" : cdiScore >= 40 ? "MEDIUM" : "LOW";
   const glassCannonAlert = cdiRating === "HIGH" && protectionCount < 8;
 
-  // 4. Consistency Calculations
-  const jointProb = calculateJointConsistency(99, 13, landsCount, 3, rampCount, k_ramp, drawCount, k_draw);
+  // 4. Consistency Calculations (Ensures disjoint sets so K_other >= 0 unconditionally)
+  const jointProb = calculateJointConsistency(99, 13, landsCount, 3, disjointRampCount, k_ramp, disjointDrawCount, k_draw);
   let consistencyRating = "Low Consistency";
   let consistencyColor = "#E24A4A";
   if (jointProb >= 0.70) {

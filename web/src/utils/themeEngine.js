@@ -1,14 +1,21 @@
 import { isGameChanger, isMassLandDenial, isTutor, isExtraTurn } from './cfpRules.js';
 
 const MECHANICAL_THEMES = {
+  "Group Slug / Bleed": [/each opponent loses/i, /damage to each opponent/i, /each player loses/i, /lost life this turn/i, /deals? \d+ damage to each/i, /attacks, each opponent loses/i, /becomes tapped, each opponent/i],
+  "Big Mana / Colorless": [/adds? \{c\}/i, /colorless mana/i, /\beldrazi\b/i, /affinity for/i, /\btron\b/i, /mana value 6 or greater/i, /mana value 7 or greater/i],
+  "Flash / Instant Timing": [/as though they had flash/i, /\bflash\b/i, /any time you could cast an instant/i],
+  "Enchantress / Constellation": [/whenever you cast an enchantment/i, /\bconstellation\b/i, /enchantment enters/i, /enchantment spell/i],
+  "Blink / Flicker": [/exile.*then return.*to the battlefield/i, /\bflicker\b/i, /\bblink\b/i, /enters the battlefield again/i],
+  "Spellslinger": [/whenever you cast an instant or sorcery/i, /instant or sorcery spell/i, /\bmagecraft\b/i],
+  "Counters (+1/+1 / Proliferate)": [/\+1\/\+1 counter/i, /\bproliferate\b/i, /doubling season/i, /hardened scales/i],
+  "Tokens": [/create.*token/i, /\bpopulate\b/i, /\bamass\b/i],
   "Landfall / Lands": [/\blandfall\b/i, /whenever a land enters/i, /play an additional land/i],
   "Sacrifice / Aristocrats": [/sacrifice a/i, /whenever a.*dies/i, /die, you/i, /\baristocrat\b/i],
   "Graveyard / Reanimator": [/\bgraveyard\b/i, /return.*from your graveyard/i, /\breanimate\b/i, /\bdredge\b/i, /\bundergrowth\b/i],
-  "Blink / Flicker": [/exile.*then return.*to the battlefield/i, /\bflicker\b/i, /\bblink\b/i, /enters the battlefield again/i],
-  "Tokens": [/create.*token/i, /\bpopulate\b/i, /\bamass\b/i],
-  "Counters (+1/+1 / Proliferate)": [/\+1\/\+1 counter/i, /\bproliferate\b/i, /doubling season/i, /hardened scales/i],
-  "Spellslinger": [/whenever you cast an instant or sorcery/i, /instant or sorcery spell/i, /\bmagecraft\b/i],
   "Artifacts / Voltron": [/\bartifact\b/i, /\bequip\b/i, /enchant creature/i, /\baura\b/i, /\bvehicles\b/i],
+  "Wheel / Draw-Punish": [/each player draws/i, /whenever an opponent draws/i, /\bwheel\b/i, /discards? their hand/i],
+  "Stax / Resource Denial": [/players can't/i, /can't cast/i, /spells cost.*more/i, /enter the battlefield tapped/i, /\brule of law\b/i],
+  "Combat / Extra Turns": [/additional combat phase/i, /extra turn/i, /double strike/i, /combat damage to a player/i],
   "Lifegain": [/gain life/i, /whenever you gain life/i, /\blifelink\b/i],
   "Discard / Madness": [/\bdiscard\b/i, /\bcycling\b/i, /\bmadness\b/i],
   "Planeswalkers / Superfriends": [/\bplaneswalker\b/i, /\bloyalty\b/i]

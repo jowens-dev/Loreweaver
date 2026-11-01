@@ -149,8 +149,8 @@ def test_bracket_5_cedh_meta_staples():
     assert deck["stats"]["avg_cmc"] < 2.0
 
     all_names = {c["name"] for group in deck["categories"].values() for c in group}
-    # Mandatory cEDH fast mana
-    assert "Mana Crypt" in all_names
+    # Mandatory tournament legal cEDH fast mana (Mana Crypt is format-banned)
+    assert "Grim Monolith" in all_names
     assert "Mox Diamond" in all_names
     assert "Chrome Mox" in all_names
     assert "Lotus Petal" in all_names

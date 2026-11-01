@@ -133,6 +133,7 @@ def search_commanders(
     params: list[Any] = []
     conditions = [
         "is_commander = 1",
+        "commander_legal = 1",
         "edhrec_rank IS NOT NULL"
     ]
 
@@ -178,6 +179,7 @@ def search_cards_predictive(
     ]
     if commanders_only:
         conditions.append("is_commander = 1")
+        conditions.append("commander_legal = 1")
     else:
         conditions.append("commander_legal = 1")
 

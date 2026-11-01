@@ -144,7 +144,28 @@ def detect_resource_profile(commander: dict[str, Any] | None) -> dict[str, Any]:
             "yield": "Up to 6 {C} colorless mana in postcombat main phase",
             "payoff": "High-CMC colorless bombs castable on Turns 2-3"
         }
-    if "from exile" in oracle or "exile" in oracle and "play" in oracle:
+    if "opponent loses" in oracle or "damage to each opponent" in oracle or "lost life" in oracle:
+        return {
+            "engine_type": "Group Slug & Symmetric Bleed Engine",
+            "catalyst": "Incremental table-wide life loss and non-combat pings",
+            "yield": "Asymmetric life totals and attrition velocity",
+            "payoff": "Punishing bleed triggers that tax opponents for normal game actions"
+        }
+    if "+1/+1 counter" in oracle or "proliferate" in oracle:
+        return {
+            "engine_type": "Counters & Proliferate Engine",
+            "catalyst": "Distributing +1/+1 counters and amplifying board presence",
+            "yield": "Exponential creature scaling and loyalty acceleration",
+            "payoff": "Overwhelming board dominance and lethal combat strikes"
+        }
+    if "token" in oracle and "create" in oracle:
+        return {
+            "engine_type": "Token Swarm & Go-Wide Engine",
+            "catalyst": "Generating creature or treasure tokens on repeatable triggers",
+            "yield": "Wide battlefield presence and sacrifice/anthem fodder",
+            "payoff": "Overrun alpha strikes and death-drain multipliers"
+        }
+    if "from exile" in oracle or ("exile" in oracle and "play" in oracle):
         return {
             "engine_type": "Exile-Cast / Treasure Synergies",
             "catalyst": "Impulse exile draw effects and spells cast from exile",
@@ -185,6 +206,13 @@ def detect_resource_profile(commander: dict[str, Any] | None) -> dict[str, Any]:
             "catalyst": "Cheap 1-mana instant and sorcery cantrips",
             "yield": "Doubled spell triggers and treasure refunds",
             "payoff": "Aetherflux storms, burn damage, and endless cantrips"
+        }
+    if "equipment" in oracle or "equip" in oracle or "aura" in oracle:
+        return {
+            "engine_type": "Voltron / Equipment Modification",
+            "catalyst": "Attaching equipment and auras to the commander",
+            "yield": "High power buffs, keyword evasion, and damage protection",
+            "payoff": "21 commander combat damage one-shot eliminations"
         }
 
     return {
