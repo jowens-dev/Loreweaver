@@ -446,18 +446,222 @@ def resolve_color_identity(color_input: str | list[str] | set[str] | None) -> se
     return colors
 
 
+def extract_strategy_intents(deck_idea: str, win_con: str = "") -> dict[str, Any]:
+    """Semantic strategy parser extracting normalized intents, themes, and mechanics."""
+    raw_idea = (deck_idea or "").strip()
+    raw_win_con = (win_con or "").strip().lower()
+
+    # Normalize text: lowercase and strip smart quotes / apostrophes
+    normalized = raw_idea.lower()
+    normalized = normalized.replace("’", "'")
+    normalized_no_apos = normalized.replace("'", "")
+
+    # Tokenize words (length >= 2)
+    words = re.findall(r"\b[a-z0-9\+\-\/]{2,}\b", normalized_no_apos)
+
+    # Stemming and morphological normalization map
+    stemmed_tokens = set()
+    for w in words:
+        if w in {"planeswalkers", "planeswalker"}:
+            stemmed_tokens.add("planeswalker")
+        elif w in {"counters", "counter"}:
+            stemmed_tokens.add("counter")
+        elif w in {"tokens", "token"}:
+            stemmed_tokens.add("token")
+        elif w in {"turns", "turn"}:
+            stemmed_tokens.add("turn")
+        elif w in {"lands", "land"}:
+            stemmed_tokens.add("land")
+        elif w in {"flickers", "flickering", "blinks", "blinking"}:
+            stemmed_tokens.add("blink")
+        elif w in {"sacrifices", "sacrificing", "aristocrats"}:
+            stemmed_tokens.add("sacrifice")
+        elif w in {"enchantments", "enchantresses", "enchantress"}:
+            stemmed_tokens.add("enchantress")
+        elif w in {"spellslingers", "spellslinging"}:
+            stemmed_tokens.add("spellslinger")
+        elif w.startswith("proliferat"):
+            stemmed_tokens.add("proliferate")
+        else:
+            stemmed_tokens.add(w)
+
+    if raw_win_con:
+        stemmed_tokens.add(raw_win_con)
+
+    # 1. Planeswalker Theme
+    is_planeswalker_theme = bool(
+        "planeswalker" in stemmed_tokens or
+        "superfriends" in normalized_no_apos or
+        "loyalty" in normalized_no_apos or
+        "planeswalker" in normalized_no_apos
+    )
+
+    # 2. Multi-Activation & Timing Enablers
+    multi_activation_patterns = [
+        "multiple times", "twice", "additional time", "additional times",
+        "every turn", "everyones turn", "everyone turn", "opponents turn",
+        "opponent turn", "each turn", "instant speed", "flash",
+        "on each player", "each players turn", "each player's turn",
+        "any player turn", "any players turn", "all turns"
+    ]
+    is_multi_activation = any(p in normalized_no_apos for p in multi_activation_patterns)
+
+    # 3. Stax
+    stax_patterns = ["stax", "rule of law", "tax", "resource denial", "hatebears", "lockdown"]
+    is_stax = raw_win_con == "stax" or any(p in normalized_no_apos for p in stax_patterns)
+
+    # 4. Counters
+    is_counters = bool(
+        "counter" in stemmed_tokens or "proliferate" in stemmed_tokens or "+1/+1" in normalized_no_apos or
+        "proliferat" in normalized_no_apos or "counter" in normalized_no_apos
+    )
+
+    # 5. Tokens
+    is_tokens = bool(
+        "token" in stemmed_tokens or "populate" in normalized_no_apos or "go-wide" in normalized_no_apos
+    )
+
+    # 6. Sacrifice
+    is_sacrifice = bool(
+        "sacrifice" in stemmed_tokens or "aristocrats" in normalized_no_apos or "dies" in stemmed_tokens
+    )
+
+    # 7. Enchantress
+    is_enchantress = bool(
+        "enchantress" in stemmed_tokens or "enchantment" in normalized_no_apos or "constellation" in normalized_no_apos
+    )
+
+    # 8. Spellslinger
+    is_spellslinger = bool(
+        "spellslinger" in stemmed_tokens or "storm" in stemmed_tokens or "magecraft" in normalized_no_apos
+    )
+
+    # 9. Blink
+    is_blink = bool(
+        "blink" in stemmed_tokens or "flicker" in normalized_no_apos
+    )
+
+    # 10. Landfall
+    is_landfall = bool(
+        "landfall" in normalized_no_apos or "land" in stemmed_tokens
+    )
+
+    return {
+        "is_planeswalker_theme": is_planeswalker_theme,
+        "is_multi_activation": is_multi_activation,
+        "is_stax": is_stax,
+        "is_counters": is_counters,
+        "is_tokens": is_tokens,
+        "is_sacrifice": is_sacrifice,
+        "is_enchantress": is_enchantress,
+        "is_spellslinger": is_spellslinger,
+        "is_blink": is_blink,
+        "is_landfall": is_landfall,
+        "tokens": stemmed_tokens,
+        "raw_text": raw_idea,
+        "normalized_text": normalized_no_apos
+    }
+
+
+def generate_planeswalker_blueprint(
+    commanders: list[dict[str, Any]],
+    deck_cards: dict[str, dict[str, Any]],
+    preferred_win_con: str,
+    bracket: int,
+    intents: dict[str, Any]
+) -> str:
+    """Structure win_con_execution as a detailed 5-section Game State Blueprint."""
+    # 1. Identify multi-activation & timing enablers present in deck
+    enablers_all = [
+        "The Chain Veil", "Oath of Teferi", "Teferi, Temporal Archmage",
+        "Teferi, Master of Time", "Ichormoon Gauntlet", "Displacer Kitten",
+        "Rings of Brighthearth", "Lithoform Engine"
+    ]
+    present_enablers = [name for name in enablers_all if name.lower() in deck_cards]
+
+    # 2. Identify planeswalkers present
+    deck_pws = [c for c in deck_cards.values() if "planeswalker" in c.get("type_line", "").lower()]
+    deck_pws.sort(key=lambda c: c.get("edhrec_rank") or 99999)
+    pw_names = [c["name"] for c in deck_pws[:6]]
+
+    # 3. Identify stax pieces present
+    stax_all = [
+        "Rule of Law", "Archon of Emeria", "Drannith Magistrate",
+        "Deafening Silence", "Dauthi Voidwalker", "Opposition Agent", "Aven Mindcensor"
+    ]
+    present_stax = [name for name in stax_all if name.lower() in deck_cards]
+
+    cmd_display = " // ".join(c["name"] for c in commanders) if len(commanders) == 1 else " & ".join(c["name"] for c in commanders)
+    bridge_mention = "the Prismatic Bridge" if "Esika" in cmd_display else cmd_display
+
+    # Section 1: Tactical Concept
+    if intents.get("is_stax"):
+        concept_title = "⚡ Tactical Concept: Planeswalker Multi-Activation & Asymmetric Stax Lock"
+    else:
+        concept_title = f"⚡ Tactical Concept: Planeswalker Multi-Activation & {preferred_win_con.capitalize()} Engine"
+
+    # Section 2: Game State Engine
+    enabler_list_str = ", ".join(present_enablers) if present_enablers else "The Chain Veil, Oath of Teferi, Teferi, Temporal Archmage, and Teferi, Master of Time"
+    engine_str = (
+        f"⚙️ Game State Engine: Assembles the multi-activation engine using {enabler_list_str}. "
+        f"These key pieces unlock compounding value by granting multiple loyalty activations per turn and unlocking "
+        f"instant-speed loyalty activations during each opponent's turn. Activating planeswalkers on everyone's turn "
+        f"accelerates loyalty velocity up to 4x per round of turns, achieving game-winning emblems in a single turn cycle."
+    )
+
+    # Section 3: Planeswalker Arsenal
+    if pw_names:
+        arsenal_str = (
+            f"🎯 Planeswalker Arsenal: Anchored by {len(deck_pws)} planeswalkers, featuring {', '.join(pw_names)}. "
+            f"Each planeswalker generates continuous card advantage, board control, and lethal ultimate abilities."
+        )
+    else:
+        arsenal_str = "🎯 Planeswalker Arsenal: High-density superfriends suite commanding the battlefield."
+
+    # Section 4: Win Condition Synergy
+    if intents.get("is_stax"):
+        stax_str = f" ({', '.join(present_stax)})" if present_stax else ""
+        win_con_str = (
+            f"🛡️ Win Condition Synergy: Asymmetric Stax Chokehold{stax_str}. Under Rule of Law and Archon of Emeria, "
+            f"opponents can only cast one spell per turn, crippling combo attempts and storm velocity. "
+            f"Crucially, Planeswalker loyalty abilities are activated abilities on existing permanents—completely bypassing "
+            f"spell-casting restrictions. While opponents remain choked under stax, your planeswalkers generate repeated "
+            f"value across every player's turn until ticking into game-ending ultimate emblems."
+        )
+    else:
+        win_con_str = (
+            f"🛡️ Win Condition Synergy: Converts loyalty acceleration directly into victory through {preferred_win_con.upper()}, "
+            f"utilizing multi-activation triggers to dominate the board while maintaining defensive superiority."
+        )
+
+    # Section 5: Turn-by-Turn Game Progression
+    enabler_example = present_enablers[0] if present_enablers else "The Chain Veil"
+    progression_str = (
+        f"📈 Turn-by-Turn Game Progression:\n"
+        f"  • Turns 1–3 (Setup): Lay down mana acceleration and asymmetric stax locks.\n"
+        f"  • Turns 4–5 (Engine Deployment): Deploy {bridge_mention} / Planeswalkers alongside {enabler_example} or Oath of Teferi.\n"
+        f"  • Endgame (Lockdown & Ultimates): Activate loyalty abilities 2–4 times across every opponent's turn, ticking up to game-ending ultimate emblems (Teferi, Liliana, Chandra, Nicol Bolas) while opponents remain choked under stax."
+    )
+
+    return f"{concept_title}\n\n{engine_str}\n\n{arsenal_str}\n\n{win_con_str}\n\n{progression_str}"
+
+
 def find_matching_commander(
     conn: sqlite3.Connection,
     prompt: str,
     color_pref: set[str] | None = None,
     win_con: str = "combat",
     bracket: int = 3,
-    custom_bans: set[str] | None = None
+    custom_bans: set[str] | None = None,
+    intents: dict[str, Any] | None = None
 ) -> dict[str, Any] | None:
     """Select the best matching legendary creature from cards.db based on prompt, colors, and bracket."""
     cursor = conn.cursor()
     color_filter = ""
     params: list[Any] = []
+
+    if intents is None:
+        intents = extract_strategy_intents(prompt, win_con)
 
     if color_pref is not None:
         legal_identities = db.get_legal_color_identities(color_pref)
@@ -485,6 +689,7 @@ def find_matching_commander(
         return None
 
     prompt_tokens = {w.lower() for w in re.findall(r"\b\w{3,}\b", prompt)}
+    prompt_tokens.update(intents.get("tokens", set()))
     prompt_tokens.add(win_con.lower())
 
     best_card: dict[str, Any] | None = None
@@ -505,6 +710,23 @@ def find_matching_commander(
                 score += 25.0
             else:
                 score -= 40.0
+
+        # Superfriends / Planeswalker Commander Boost
+        if intents.get("is_planeswalker_theme"):
+            superfriends_commanders = {
+                "sisay, weatherlight captain",
+                "atraxa, praetors' voice",
+                "commodore guff",
+                "carth the lion",
+                "esika, god of the tree // the prismatic bridge",
+                "teferi, temporal archmage"
+            }
+            if cand["name_lower"] in superfriends_commanders or any(s in cand["name_lower"] for s in ["esika", "prismatic bridge", "commodore guff", "carth the lion", "atraxa, praetors"]):
+                score += 150.0
+            if "planeswalker" in text or "loyalty" in text:
+                score += 80.0
+            if "proliferate" in text:
+                score += 40.0
 
         # Prompt token matches
         for tok in prompt_tokens:
@@ -573,7 +795,8 @@ def score_synergy(
     commander: dict[str, Any],
     prompt_tokens: set[str],
     win_con: str,
-    bracket: int
+    bracket: int,
+    intents: dict[str, Any] | None = None
 ) -> float:
     """Calculate objective synergy score between a card and the commander/theme."""
     name = card["name"].lower()
@@ -587,6 +810,43 @@ def score_synergy(
     cmc = card.get("cmc", 3.0)
 
     score = 0.0
+
+    # 0. Planeswalker Theme & Multi-Activation Engine
+    is_pw_theme = (intents.get("is_planeswalker_theme") if intents else ("planeswalker" in prompt_tokens or "superfriends" in prompt_tokens))
+    is_multi_act = (intents.get("is_multi_activation") if intents else False)
+
+    if is_pw_theme or is_multi_act:
+        # A. All Planeswalkers (+55.0)
+        if "planeswalker" in type_line:
+            score += 55.0
+
+        # B. Multi-activation & timing enablers (+75.0)
+        multi_names = {
+            "the chain veil", "oath of teferi", "ichormoon gauntlet", "displacer kitten",
+            "teferi, temporal archmage", "teferi, master of time", "rings of brighthearth",
+            "lithoform engine"
+        }
+        if name in multi_names or any(m in name for m in ["chain veil", "oath of teferi", "ichormoon", "displacer kitten"]):
+            score += 75.0
+        elif "loyalty abilities" in oracle or ("planeswalker" in oracle and ("activate" in oracle or "additional" in oracle)):
+            score += 75.0
+
+        # C. Proliferate / Counter Doubling (+45.0)
+        prolif_names = {
+            "deepglow skate", "doubling season", "vorinclex, monstrous raider",
+            "flux channeler", "evolution sage", "inexorable tide", "karn's bastion",
+            "contagion engine", "interplanar beacon"
+        }
+        if name in prolif_names or "proliferate" in oracle or "double the number of each kind of counter" in oracle:
+            score += 45.0
+
+        # D. Sweepers / Pillowfort protection (+35.0)
+        prot_names = {
+            "toxic deluge", "supreme verdict", "damnation", "cyclonic rift",
+            "ghostly prison", "propaganda", "sphere of safety"
+        }
+        if name in prot_names or "creatures can't attack you" in oracle or ("destroy all creatures" in oracle and ("instant" in type_line or "sorcery" in type_line)):
+            score += 35.0
 
     # Detect Big-Mana / Colorless Engine (e.g., Belbe, Zhulodok, Rakdos, Kozilek)
     is_big_mana_engine = (
@@ -746,7 +1006,8 @@ def assemble_lands(
     bracket: int,
     budget: str = "moderate",
     house_rules: set[str] | None = None,
-    custom_bans: set[str] | None = None
+    custom_bans: set[str] | None = None,
+    intents: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
     """Assemble a balanced, legal land base with staples, dual lands, and pip-proportional basics."""
     lands: list[dict[str, Any]] = []
@@ -814,6 +1075,11 @@ def assemble_lands(
         if "B" in allowed_colors:
             try_add("Bojuka Bog")
     try_add("Reliquary Tower")
+
+    # Thematic utility lands for Planeswalker & Counter strategies
+    if intents and (intents.get("is_planeswalker_theme") or intents.get("is_counters")):
+        try_add("Karn's Bastion")
+        try_add("Interplanar Beacon")
 
     # Dual lands matching exact color pairs in commander identity
     dual_map = {
@@ -934,7 +1200,8 @@ def query_targeted_synergy_candidates(
     conn: sqlite3.Connection,
     allowed_colors: set[str],
     commander: dict[str, Any],
-    prompt_tokens: set[str]
+    prompt_tokens: set[str],
+    intents: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
     """Query targeted archetypes from SQLite to ensure high-synergy enablers are included in the pool."""
     cursor = conn.cursor()
@@ -943,6 +1210,118 @@ def query_targeted_synergy_candidates(
     cmd_text = f"{commander['name']} {commander.get('oracle_text', '')}".lower()
 
     targeted: list[dict[str, Any]] = []
+
+    is_pw = intents.get("is_planeswalker_theme", False) if intents else ("planeswalker" in prompt_tokens or "superfriends" in prompt_tokens)
+    is_multi = intents.get("is_multi_activation", False) if intents else False
+    is_stax = intents.get("is_stax", False) if intents else ("stax" in prompt_tokens)
+
+    # 0. Planeswalker & Multi-Activation targeted suite
+    if is_pw or is_multi:
+        # Query A: High-impact Planeswalkers in allowed colors
+        sql_pw = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND commander_legal = 1
+              AND type_line LIKE '%Planeswalker%'
+              AND edhrec_rank IS NOT NULL
+            ORDER BY edhrec_rank ASC LIMIT 80
+        """
+        cursor.execute(sql_pw, legal_ids)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+        # Query B: Multi-activation & timing enablers
+        multi_activation_names = [
+            "The Chain Veil", "Oath of Teferi", "Ichormoon Gauntlet", "Displacer Kitten",
+            "Teferi, Temporal Archmage", "Teferi, Master of Time", "Rings of Brighthearth",
+            "Lithoform Engine"
+        ]
+        q_multi = ",".join("?" * len(multi_activation_names))
+        sql_multi = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND commander_legal = 1
+              AND name IN ({q_multi})
+        """
+        cursor.execute(sql_multi, legal_ids + multi_activation_names)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+        # Query C: Loyalty acceleration & proliferate
+        proliferate_names = [
+            "Deepglow Skate", "Doubling Season", "Vorinclex, Monstrous Raider",
+            "Flux Channeler", "Evolution Sage", "Inexorable Tide", "Karn's Bastion",
+            "Contagion Engine", "Interplanar Beacon"
+        ]
+        q_prolif = ",".join("?" * len(proliferate_names))
+        sql_prolif = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND commander_legal = 1
+              AND (
+                name IN ({q_prolif})
+                OR oracle_text LIKE '%proliferate%'
+              )
+            ORDER BY edhrec_rank ASC LIMIT 50
+        """
+        cursor.execute(sql_prolif, legal_ids + proliferate_names)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+        # Query D: Creature sweepers & pillowfort protection
+        protection_names = [
+            "Toxic Deluge", "Supreme Verdict", "Damnation", "Cyclonic Rift",
+            "Ghostly Prison", "Propaganda", "Sphere of Safety"
+        ]
+        q_prot = ",".join("?" * len(protection_names))
+        sql_prot = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND commander_legal = 1
+              AND (
+                name IN ({q_prot})
+                OR (
+                    (type_line LIKE '%Sorcery%' OR type_line LIKE '%Instant%')
+                    AND (oracle_text LIKE '%destroy all creatures%' OR oracle_text LIKE '%exile all creatures%')
+                )
+              )
+            ORDER BY edhrec_rank ASC LIMIT 40
+        """
+        cursor.execute(sql_prot, legal_ids + protection_names)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
+
+    if is_stax:
+        stax_names = [
+            "Rule of Law", "Archon of Emeria", "Deafening Silence", "Drannith Magistrate",
+            "Dauthi Voidwalker", "Opposition Agent", "Aven Mindcensor", "Trinisphere",
+            "Collector Ouphe", "Grand Abolisher"
+        ]
+        q_stax = ",".join("?" * len(stax_names))
+        sql_stax = f"""
+            SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
+                   subtypes, colors, color_identity, oracle_text, flavor_text,
+                   set_code, set_type, layout, reprint, keywords, image_url, edhrec_rank,
+                   is_commander, commander_legal
+            FROM cards
+            WHERE color_identity IN ({placeholders})
+              AND commander_legal = 1
+              AND name IN ({q_stax})
+        """
+        cursor.execute(sql_stax, legal_ids + stax_names)
+        targeted.extend([db.parse_card_row(r) for r in cursor.fetchall()])
 
     # 1. Pinger / Bleeder enablers if life loss / damage triggers commander
     if "opponent loses" in cmd_text or "damage to each opponent" in cmd_text or "lost life this turn" in cmd_text:
@@ -1178,6 +1557,9 @@ def build_deck(
     if budget not in {"ultra_budget", "budget", "moderate", "unlimited"}:
         budget = "moderate"
 
+    # Extract semantic strategy intents
+    intents = extract_strategy_intents(deck_idea, preferred_win_con)
+
     # In Brackets 1 and 2 or with no_combos house rule, infinite combos are strictly disallowed
     if (not cfg["allow_combos"] or "no_combos" in house_rules_set) and preferred_win_con == "combo":
         preferred_win_con = "combat"
@@ -1225,7 +1607,8 @@ def build_deck(
             color_pref=effective_color_pref,
             win_con=preferred_win_con,
             bracket=bracket,
-            custom_bans=custom_bans_set
+            custom_bans=custom_bans_set,
+            intents=intents
         )
         if not discovered:
             discovered = db.get_card_by_name(conn, "Belbe, Corrupted Observer")
@@ -1250,11 +1633,12 @@ def build_deck(
         allowed_colors.update(cmd.get("color_identity", []))
 
     prompt_tokens = {w.lower() for w in re.findall(r"\b\w{3,}\b", deck_idea)}
+    prompt_tokens.update(intents.get("tokens", set()))
     prompt_tokens.add(preferred_win_con)
 
     # 2. Query Card Pools Legal in Commander Identity (General Pool + Targeted Synergy Pool)
     general_pool = db.get_cards_by_identity(conn, allowed_colors, limit=800)
-    targeted_pool = query_targeted_synergy_candidates(conn, allowed_colors, primary_commander, prompt_tokens)
+    targeted_pool = query_targeted_synergy_candidates(conn, allowed_colors, primary_commander, prompt_tokens, intents=intents)
 
     # Deduplicate pool by canonical lowercase name
     combined_pool_map: dict[str, dict[str, Any]] = {}
@@ -1373,16 +1757,23 @@ def build_deck(
         roles = classify_card_role(c)
         if "land" in roles:
             continue
-        score = score_synergy(c, primary_commander, prompt_tokens, preferred_win_con, bracket)
+        score = score_synergy(c, primary_commander, prompt_tokens, preferred_win_con, bracket, intents=intents)
         scored_candidates.append((score, c, roles))
 
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
+
+    max_pw_quota = 16 if intents.get("is_planeswalker_theme") else 999
+
+    def get_pw_count() -> int:
+        return sum(1 for c in deck_cards.values() if "planeswalker" in c.get("type_line", "").lower())
 
     # Fill Ramp quota
     for score, card, roles in scored_candidates:
         if len(categorized["ramp"]) >= cfg["target_ramp"]:
             break
         if "ramp" in roles:
+            if "planeswalker" in card.get("type_line", "").lower() and get_pw_count() >= 2:
+                continue
             add_card(card, "ramp")
 
     # Fill Draw quota
@@ -1390,6 +1781,8 @@ def build_deck(
         if len(categorized["draw"]) >= cfg["target_draw"]:
             break
         if "draw" in roles:
+            if "planeswalker" in card.get("type_line", "").lower() and get_pw_count() >= 3:
+                continue
             add_card(card, "draw")
 
     # Fill Removal quota
@@ -1397,17 +1790,68 @@ def build_deck(
         if len(categorized["removal"]) >= cfg["target_removal"]:
             break
         if "removal" in roles:
+            if "planeswalker" in card.get("type_line", "").lower() and get_pw_count() >= 5:
+                continue
             add_card(card, "removal")
 
-    # Fill Synergy core with top remaining cards (accounting for single or partner commanders)
+    # Priority Drafting for Planeswalker Theme & Multi-Activation Engine
     target_nonlands = 100 - num_commanders - cfg["target_lands"]
     current_nonlands = sum(len(v) for k, v in categorized.items() if k != "lands")
 
+    if intents.get("is_planeswalker_theme") or intents.get("is_multi_activation"):
+        # Priority A: Draft key legal multi-activation / timing enablers
+        multi_activation_priority = [
+            "The Chain Veil", "Oath of Teferi", "Teferi, Temporal Archmage",
+            "Teferi, Master of Time", "Ichormoon Gauntlet", "Displacer Kitten"
+        ]
+        for name in multi_activation_priority:
+            if current_nonlands >= target_nonlands:
+                break
+            if name.lower() not in deck_cards:
+                cand_card = db.get_card_by_name(conn, name)
+                if cand_card and set(cand_card.get("color_identity", [])).issubset(allowed_colors):
+                    if not is_card_excluded(cand_card["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                        if add_card(cand_card, "synergy"):
+                            current_nonlands += 1
+
+        # Priority B: Enforce Planeswalker Core Quota (draft at least 14 planeswalkers, up to 16)
+        target_pw_quota = 15
+        current_pw_count = get_pw_count()
+        if current_pw_count < target_pw_quota:
+            for score, card, roles in scored_candidates:
+                if current_pw_count >= target_pw_quota or current_nonlands >= target_nonlands:
+                    break
+                if "planeswalker" in card.get("type_line", "").lower() and card["name"].lower() not in deck_cards:
+                    if add_card(card, "synergy"):
+                        current_nonlands += 1
+                        current_pw_count += 1
+
+    # Fill Synergy core with top remaining cards (accounting for single or partner commanders)
     for score, card, roles in scored_candidates:
         if current_nonlands >= target_nonlands:
             break
+        if intents.get("is_planeswalker_theme") and "planeswalker" in card.get("type_line", "").lower():
+            if get_pw_count() >= max_pw_quota:
+                continue
         if add_card(card, "synergy"):
             current_nonlands += 1
+
+    # Safety Guarantee: Enforce Planeswalker quota if non-planeswalkers filled slots early
+    if intents.get("is_planeswalker_theme"):
+        current_pw_count = get_pw_count()
+        if current_pw_count < 14:
+            available_pws = [c for score, c, roles in scored_candidates if "planeswalker" in c.get("type_line", "").lower() and c["name"].lower() not in deck_cards]
+            for pw_card in available_pws:
+                if current_pw_count >= 14:
+                    break
+                # Replace lowest scored non-planeswalker, non-enabler synergy card
+                non_pw_synergy = [c for c in categorized["synergy"] if "planeswalker" not in c.get("type_line", "").lower() and c["name"].lower() not in {"the chain veil", "oath of teferi", "ichormoon gauntlet", "displacer kitten"}]
+                if non_pw_synergy:
+                    to_remove = non_pw_synergy[-1]
+                    categorized["synergy"].remove(to_remove)
+                    deck_cards.pop(to_remove["name"].lower(), None)
+                    if add_card(pw_card, "synergy"):
+                        current_pw_count += 1
 
     # Invariant Backfill: If nonlands are short of target, backfill from filtered pool
     if current_nonlands < target_nonlands:
@@ -1433,7 +1877,8 @@ def build_deck(
         bracket=bracket,
         budget=budget,
         house_rules=house_rules_set,
-        custom_bans=custom_bans_set
+        custom_bans=custom_bans_set,
+        intents=intents
     )
     
     # Invariant Land Guarantee: Ensure lands length matches target_lands exactly
@@ -1487,7 +1932,9 @@ def build_deck(
     cmd_name = " & ".join(c["name"] for c in commanders)
     cmd_oracle = " ".join((c.get("oracle_text") or "").lower() for c in commanders)
 
-    if "adds {c}{c}" in cmd_oracle or "belbe" in cmd_name.lower():
+    if intents.get("is_planeswalker_theme"):
+        win_con_exec = generate_planeswalker_blueprint(commanders, deck_cards, preferred_win_con, bracket, intents)
+    elif "adds {c}{c}" in cmd_oracle or "belbe" in cmd_name.lower():
         win_con_exec = (
             f"⚡ Belbe Operational Engine: Deploys cheap 1–2 CMC symmetric bleeders (e.g. Creeping Bloodsucker, "
             f"Sanctum of Stone Fangs, Night Market Lookout, Thornbow Archer) to reliably trigger Belbe for up to 6 {{C}} "

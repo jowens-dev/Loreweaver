@@ -914,7 +914,8 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                     padding: '8px 12px',
                     borderRadius: '6px',
                     color: '#6ee7b7',
-                    lineHeight: '1.45'
+                    lineHeight: '1.45',
+                    whiteSpace: 'pre-line'
                   }}>
                     {deckResult.win_con_execution}
                   </div>
