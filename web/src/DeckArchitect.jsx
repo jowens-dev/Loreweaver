@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { 
   Sparkles,
-  Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers, ArrowRightLeft
+  Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers, ArrowRightLeft,
+  Shield, ChevronDown, ChevronUp, X, Plus
 } from 'lucide-react';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import DeckExportModal from './components/DeckExportModal';
@@ -97,6 +98,10 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
   const [budget, setBudget] = useState('moderate');
   const [selectedColors, setSelectedColors] = useState([]);
   const [winCon, setWinCon] = useState('combat');
+  const [houseRules, setHouseRules] = useState([]);
+  const [customBans, setCustomBans] = useState([]);
+  const [customBanInput, setCustomBanInput] = useState('');
+  const [isHouseRulesOpen, setIsHouseRulesOpen] = useState(false);
 
   // Loading & Result State
   const [loading, setLoading] = useState(false);
@@ -232,6 +237,25 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     });
   };
 
+  const toggleHouseRule = (ruleId) => {
+    setHouseRules((prev) =>
+      prev.includes(ruleId) ? prev.filter((r) => r !== ruleId) : [...prev, ruleId]
+    );
+  };
+
+  const handleAddCustomBan = (cardName) => {
+    const trimmed = (cardName || customBanInput).trim();
+    if (!trimmed) return;
+    if (!customBans.some((b) => b.toLowerCase() === trimmed.toLowerCase())) {
+      setCustomBans((prev) => [...prev, trimmed]);
+    }
+    setCustomBanInput('');
+  };
+
+  const handleRemoveCustomBan = (cardToRemove) => {
+    setCustomBans((prev) => prev.filter((b) => b.toLowerCase() !== cardToRemove.toLowerCase()));
+  };
+
   const handleBuildDeck = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
@@ -243,7 +267,9 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
       bracket: parseInt(bracket, 10),
       budget: budget,
       color_preference: selectedColors.filter((c) => c !== 'C').join(','),
-      preferred_win_con: winCon
+      preferred_win_con: winCon,
+      house_rules: houseRules,
+      custom_bans: customBans
     };
 
     try {
@@ -555,31 +581,197 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
             {/* Budget Preference */}
             <div className="form-group">
               <label className="form-label">Budget Tier</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
                 {[
+                  { id: 'ultra_budget', label: 'Ultra-Budget (<$50)' },
                   { id: 'budget', label: 'Budget (<$100)' },
-                  { id: 'moderate', label: 'Moderate' },
-                  { id: 'unlimited', label: 'Optimized' }
+                  { id: 'moderate', label: 'Moderate (~$250)' },
+                  { id: 'unlimited', label: 'Unlimited (No Cap)' }
                 ].map((b) => (
                   <button
                     key={b.id}
                     type="button"
                     onClick={() => setBudget(b.id)}
                     style={{
-                      padding: '6px 4px',
+                      padding: '8px 6px',
                       borderRadius: '6px',
                       border: budget === b.id ? '2px solid var(--color-green)' : '1px solid var(--border-color)',
                       background: budget === b.id ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-primary)',
                       color: budget === b.id ? 'var(--color-green)' : 'var(--text-secondary)',
                       fontSize: '0.75rem',
+                      fontWeight: budget === b.id ? '600' : 'normal',
                       cursor: 'pointer',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     {b.label}
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Collapsible House Rules & Ban Filter Panel */}
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setIsHouseRulesOpen(!isHouseRulesOpen)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  background: isHouseRulesOpen ? 'rgba(30, 41, 59, 0.7)' : 'rgba(30, 41, 59, 0.4)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: isHouseRulesOpen ? '8px 8px 0 0' : '8px',
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.84rem',
+                  fontWeight: '600',
+                  transition: 'background 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={16} style={{ color: 'var(--text-accent)' }} />
+                  <span>House Rules & Ban Filter</span>
+                  {(houseRules.length > 0 || customBans.length > 0) && (
+                    <span style={{
+                      background: 'rgba(239, 68, 68, 0.25)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.4)',
+                      fontSize: '0.68rem',
+                      padding: '1px 7px',
+                      borderRadius: '10px',
+                      fontWeight: '700'
+                    }}>
+                      {houseRules.length + customBans.length} active
+                    </span>
+                  )}
+                </div>
+                {isHouseRulesOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {isHouseRulesOpen && (
+                <div style={{
+                  padding: '14px',
+                  background: 'rgba(15, 23, 42, 0.65)',
+                  border: '1px solid var(--border-color)',
+                  borderTop: 'none',
+                  borderRadius: '0 0 8px 8px'
+                }}>
+                  {/* House Rules Pill Toggles */}
+                  <label className="form-label" style={{ fontSize: '0.76rem', marginBottom: '8px' }}>
+                    Common Playgroup House Bans
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+                    {[
+                      { id: 'no_combos', label: '🚫 No Infinite Combos' },
+                      { id: 'no_fast_mana', label: '⚡ No Fast Mana' },
+                      { id: 'no_free_spells', label: '🛡️ No Free Spells' },
+                      { id: 'no_stax', label: '⛓️ No Stax / MLD' },
+                      { id: 'no_tutors', label: '🔍 No Cheap Tutors' }
+                    ].map((rule) => {
+                      const isActive = houseRules.includes(rule.id);
+                      return (
+                        <button
+                          key={rule.id}
+                          type="button"
+                          onClick={() => toggleHouseRule(rule.id)}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '16px',
+                            fontSize: '0.74rem',
+                            fontWeight: isActive ? '600' : 'normal',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            border: isActive ? '1px solid #ef4444' : '1px solid var(--border-color)',
+                            background: isActive ? 'rgba(239, 68, 68, 0.2)' : 'rgba(30, 41, 59, 0.5)',
+                            color: isActive ? '#fca5a5' : 'var(--text-secondary)'
+                          }}
+                        >
+                          {rule.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Card Exclusions */}
+                  <label className="form-label" style={{ fontSize: '0.76rem', marginBottom: '6px' }}>
+                    Custom Card Exclusions
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <CommanderAutocomplete
+                        value={customBanInput}
+                        onChange={setCustomBanInput}
+                        onSelect={(card) => handleAddCustomBan(card.name)}
+                        placeholder="Search card to exclude..."
+                        commandersOnly={false}
+                        className="form-input"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAddCustomBan()}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        cursor: 'pointer',
+                        flexShrink: 0
+                      }}
+                      title="Add Card to Exclude"
+                    >
+                      <Plus size={14} />
+                      <span>Exclude</span>
+                    </button>
+                  </div>
+
+                  {/* Excluded Card Chips */}
+                  {customBans.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                      {customBans.map((cardName) => (
+                        <span
+                          key={cardName}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.35)',
+                            borderRadius: '12px',
+                            padding: '2px 8px',
+                            fontSize: '0.72rem',
+                            color: '#f87171'
+                          }}
+                        >
+                          <span>{cardName}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomBan(cardName)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#f87171',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              padding: 0
+                            }}
+                            title={`Remove ${cardName} ban`}
+                          >
+                            <X size={12} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Error Message */}
@@ -669,6 +861,30 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                     }}>
                       Bracket {deckResult.bracket?.tier} ({deckResult.bracket?.name})
                     </span>
+                    <span style={{ 
+                      background: 'rgba(34, 197, 94, 0.2)',
+                      color: 'var(--color-green)',
+                      border: '1px solid rgba(34, 197, 94, 0.4)',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      padding: '2px 8px',
+                      borderRadius: '12px'
+                    }}>
+                      Budget: {deckResult.budget === 'ultra_budget' ? 'Ultra-Budget (<$50)' : deckResult.budget === 'budget' ? 'Budget (<$100)' : deckResult.budget === 'moderate' ? 'Moderate (~$250)' : 'Unlimited'}
+                    </span>
+                    {((deckResult.house_rules && deckResult.house_rules.length > 0) || (deckResult.custom_bans && deckResult.custom_bans.length > 0)) && (
+                      <span style={{ 
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        color: '#f87171',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        padding: '2px 8px',
+                        borderRadius: '12px'
+                      }}>
+                        🚫 {(deckResult.house_rules || []).length + (deckResult.custom_bans || []).length} Restrictions Active
+                      </span>
+                    )}
                   </div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 12px' }}>
                     {deckResult.commander?.type_line} • {deckResult.commander?.mana_cost}

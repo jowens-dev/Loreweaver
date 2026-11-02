@@ -287,9 +287,11 @@ class BuildDeckRequest(BaseModel):
     commander: str = Field(default="", description="Specific commander name, or leave blank to auto-discover")
     deck_idea: str = Field(default="", description="Deck idea, strategy, or theme description (e.g. 'Aristocrats sacrifice and drain')")
     bracket: int = Field(default=3, ge=1, le=5, description="Commander bracket tier (1=Exhibition, 2=Precon, 3=Optimized, 4=High Power Unrestricted, 5=cEDH Meta)")
-    budget: str = Field(default="moderate", description="Budget tier ('budget', 'moderate', 'unlimited')")
+    budget: str = Field(default="moderate", description="Budget tier ('ultra_budget', 'budget', 'moderate', 'unlimited')")
     color_preference: str = Field(default="", description="Preferred colors (e.g. 'Golgari', 'W,B', 'Dimir')")
     preferred_win_con: str = Field(default="combat", description="Preferred win condition ('combat', 'combo', 'drain', 'stax', 'burn', 'voltron', 'mill')")
+    house_rules: list[str] = Field(default_factory=list, description="House rules toggles: 'no_combos', 'no_fast_mana', 'no_free_spells', 'no_stax', 'no_tutors'")
+    custom_bans: list[str] = Field(default_factory=list, description="Custom card names to exclude from deck")
 
 
 @app.post("/api/build")
@@ -308,7 +310,9 @@ def build_deck_endpoint(req: BuildDeckRequest) -> dict[str, Any]:
             bracket=req.bracket,
             budget=req.budget,
             color_preference=req.color_preference,
-            preferred_win_con=req.preferred_win_con
+            preferred_win_con=req.preferred_win_con,
+            house_rules=req.house_rules,
+            custom_bans=req.custom_bans,
         )
         return deck
     except ValueError as ve:

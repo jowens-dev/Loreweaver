@@ -162,9 +162,20 @@ FAST_MANA_CARDS = {
     "mana vault", "grim monolith", "ancient tomb", "lion's eye diamond"
 }
 
+NO_FAST_MANA_CARDS = FAST_MANA_CARDS | {
+    "sol ring", "ancient tomb", "mox diamond", "chrome mox",
+    "lotus petal", "mox opal", "mana vault", "grim monolith",
+    "lion's eye diamond", "jeweled lotus", "mana crypt", "mox amber"
+}
+
 CHEAP_TUTORS = {
     "demonic tutor", "vampiric tutor", "imperial seal", "worldly tutor",
     "mystical tutor", "enlightened tutor", "gamble", "personal tutor"
+}
+
+NO_TUTORS_CARDS = CHEAP_TUTORS | {
+    "diabolic intent", "grim tutor", "sylvan tutor", "merchant scroll",
+    "wishclaw talisman", "tainted pact"
 }
 
 EXPENSIVE_RESERVED_LIST = {
@@ -173,6 +184,124 @@ EXPENSIVE_RESERVED_LIST = {
     "volcanic island", "tropical island", "tundra", "bayou", "scrubland", "taiga",
     "badlands", "savannah", "plateau", "mox diamond", "lion's eye diamond", "gilded drake"
 }
+
+NO_FREE_SPELLS_CARDS = {
+    "fierce guardianship", "force of will", "deflecting swat", "deadly rollick",
+    "flawless maneuver", "force of negation", "pact of negation", "mental misstep",
+    "mindbreak trap", "misdirection", "obscuring haze", "submerge", "snuff out",
+    "force of vigor", "force of despair", "commandeer", "daze", "foil",
+    "flare of denial", "flare of malice", "flare of cultivation", "flare of fortitude",
+    "flare of duplication", "solitude", "fury", "endurance", "grief", "subtlety"
+}
+
+NO_STAX_CARDS = {
+    "winter orb", "static orb", "stasis", "armageddon", "blood moon",
+    "back to basics", "ruination", "smokestack", "trinisphere",
+    "magus of the moon", "ravages of war", "jokulhaups", "obliterate",
+    "decree of annihilation", "cataclysm", "sunder", "tangle wire",
+    "orb of dreams", "hokori, dust drinker", "rising waters",
+    "rule of law", "archon of emeria", "deafening silence", "drannith magistrate",
+    "knowledge pool", "possibility storm", "damping sphere", "collector ouphe",
+    "null rod", "stony silence", "rest in peace", "cursed totem", "chalice of the void",
+    "lodestone golem", "sphere of resistance", "thorn of amethyst"
+}
+
+FETCHLANDS = {
+    "polluted delta", "flooded strand", "bloodstained mire", "wooded foothills",
+    "windswept heath", "marsh flats", "scalding tarn", "verdant catacombs",
+    "arid mesa", "misty rainforest", "prismatic vista"
+}
+
+SHOCKLANDS = {
+    "hallowed fountain", "watery grave", "blood crypt", "stomping ground",
+    "temple garden", "godless shrine", "steam vents", "overgrown tomb",
+    "sacred foundry", "breeding pool"
+}
+
+HIGH_VALUE_STAPLES = {
+    "the one ring", "rhystic study", "smothering tithe", "esper sentinel",
+    "cyclonic rift", "dockside extortionist", "mana drain", "demonic tutor",
+    "vampiric tutor", "imperial seal", "sylvan library", "craterhoof behemoth",
+    "bolas's citadel", "teferi's protection", "the meathook massacre", "meathook massacre",
+    "sheoldred, the apocalypse", "orcish bowmasters", "trouble in pairs",
+    "the great henge", "great henge", "parallel lives", "doubling season",
+    "anointed procession", "urza's saga", "ancient tomb", "cavern of souls",
+    "mana confluence", "city of brass", "boseiju, who endures", "field of the dead",
+    "jeska's will", "wheel of fortune", "roaming throne", "finale of devastation",
+    "consecrated sphinx", "grand abolisher", "ranger-captain of eos", "dauthi voidwalker",
+    "opposition agent", "deflecting swat", "fierce guardianship", "deadly rollick",
+    "force of will", "force of negation", "flawless maneuver", "pact of negation",
+    "mindbreak trap", "mana vault", "grim monolith", "mox diamond", "chrome mox",
+    "mox opal", "lotus petal", "lion's eye diamond"
+}
+
+DISALLOWED_LOW_BRACKET_COMBOS = {
+    "dual caster mage", "dualcaster mage", "twinflame", "heliod, sun-crowned",
+    "walking ballista", "thassa's oracle", "demonic consultation", "underworld breach",
+    "kiki-jiki, mirror breaker", "zealous conscripts", "exquisite blood", "sanguine bond",
+    "lion's eye diamond", "brain freeze", "tainted pact", "food chain", "squee, the immortal",
+    "eternal scourge", "misthollow griffin", "mindcrank", "bloodchief ascension",
+    "isochron scepter", "dramatic reversal", "chain of smog", "professor onyx",
+    "abdel adrian, gorion's ward", "worldgorger dragon", "animate dead",
+    "mikaeus, the unhallowed", "triskelion", "rings of brighthearth", "basalt monolith",
+    "painter's servant", "grindstone"
+}
+
+COMPACT_COMBO_CARDS = DISALLOWED_LOW_BRACKET_COMBOS
+
+BASIC_LANDS = {"plains", "island", "swamp", "mountain", "forest", "wastes"}
+
+
+def is_card_excluded(
+    card_name: str,
+    budget: str = "moderate",
+    house_rules: set[str] | None = None,
+    custom_bans: set[str] | None = None,
+    bracket: int = 3
+) -> bool:
+    """Check if a card is prohibited by budget constraints, house rules, or custom bans."""
+    name_lower = card_name.strip().lower()
+
+    # Basic lands are never banned (essential game pieces for 100-card invariant)
+    if name_lower in BASIC_LANDS:
+        return False
+
+    # 1. Custom card bans
+    if custom_bans and name_lower in custom_bans:
+        return True
+
+    # 2. House rules enforcement
+    if house_rules:
+        if "no_fast_mana" in house_rules and name_lower in NO_FAST_MANA_CARDS:
+            return True
+        if "no_combos" in house_rules and name_lower in COMPACT_COMBO_CARDS:
+            return True
+        if "no_free_spells" in house_rules and name_lower in NO_FREE_SPELLS_CARDS:
+            return True
+        if "no_stax" in house_rules and name_lower in NO_STAX_CARDS:
+            return True
+        if "no_tutors" in house_rules and name_lower in NO_TUTORS_CARDS:
+            return True
+
+    # 3. Budget tier enforcement
+    if budget == "ultra_budget":
+        if name_lower in FETCHLANDS:
+            return True
+        if name_lower in SHOCKLANDS:
+            return True
+        if name_lower in EXPENSIVE_RESERVED_LIST:
+            return True
+        if name_lower in NO_FAST_MANA_CARDS:
+            return True
+        if name_lower in HIGH_VALUE_STAPLES:
+            return True
+    elif budget == "budget":
+        if name_lower in FETCHLANDS:
+            return True
+        if name_lower in EXPENSIVE_RESERVED_LIST:
+            return True
+
+    return False
 
 # --- CEDH META STAPLES BY COLOR (BRACKET 5 ONLY) ---
 # Note: Format-banned cards (Mana Crypt, Jeweled Lotus, Dockside, Nadu) are strictly omitted.
@@ -322,7 +451,8 @@ def find_matching_commander(
     prompt: str,
     color_pref: set[str] | None = None,
     win_con: str = "combat",
-    bracket: int = 3
+    bracket: int = 3,
+    custom_bans: set[str] | None = None
 ) -> dict[str, Any] | None:
     """Select the best matching legendary creature from cards.db based on prompt, colors, and bracket."""
     cursor = conn.cursor()
@@ -361,6 +491,8 @@ def find_matching_commander(
     best_score = -1e9
 
     for cand in candidates:
+        if custom_bans and cand["name_lower"] in custom_bans:
+            continue
         text = f"{cand['name']} {cand.get('oracle_text', '')} {cand.get('type_line', '')}".lower()
         score = 0.0
 
@@ -612,7 +744,9 @@ def assemble_lands(
     target_lands: int,
     spells: list[dict[str, Any]],
     bracket: int,
-    budget: str = "moderate"
+    budget: str = "moderate",
+    house_rules: set[str] | None = None,
+    custom_bans: set[str] | None = None
 ) -> list[dict[str, Any]]:
     """Assemble a balanced, legal land base with staples, dual lands, and pip-proportional basics."""
     lands: list[dict[str, Any]] = []
@@ -620,6 +754,8 @@ def assemble_lands(
 
     def try_add(card_name: str) -> bool:
         if card_name.lower() in used_names:
+            return False
+        if is_card_excluded(card_name, budget=budget, house_rules=house_rules, custom_bans=custom_bans, bracket=bracket):
             return False
         c = db.get_card_by_name(conn, card_name)
         if c and set(c["color_identity"]).issubset(allowed_colors):
@@ -639,14 +775,14 @@ def assemble_lands(
         for name in colorless_staples:
             if len(lands) >= target_lands:
                 break
-            if (bracket < 4 or budget == "budget") and name in {"Ancient Tomb", "Eye of Ugin"}:
+            if (bracket < 4 or budget in {"budget", "ultra_budget"}) and name in {"Ancient Tomb", "Eye of Ugin"}:
                 continue
             try_add(name)
 
         wastes = db.get_card_by_name(conn, "Wastes")
         while len(lands) < target_lands and wastes:
             lands.append(wastes)
-        return lands
+        return lands[:target_lands]
 
     # 2. Multi-color & Mono-color rainbow/utility staples
     rainbow_staples = ["Command Tower", "Exotic Orchard", "Path of Ancestry", "Reflecting Pool"]
@@ -655,7 +791,7 @@ def assemble_lands(
             try_add(s)
 
     # Fast / High-power utility lands for Brackets 4 & 5
-    if bracket >= 4 and budget != "budget":
+    if bracket >= 4 and budget not in {"budget", "ultra_budget"}:
         try_add("Ancient Tomb")
         try_add("City of Brass")
         try_add("Mana Confluence")
@@ -664,15 +800,19 @@ def assemble_lands(
     try_add("Emergence Zone")
     try_add("Winding Canyons")
 
-    if "G" in allowed_colors:
-        try_add("Boseiju, Who Endures")
-        try_add("Yavimaya, Cradle of Growth")
-    if "B" in allowed_colors:
-        try_add("Urborg, Tomb of Yawgmoth")
-        try_add("Bojuka Bog")
-        try_add("Leechridden Swamp")
-    if "W" in allowed_colors:
-        try_add("High Market")
+    if budget not in {"ultra_budget"}:
+        if "G" in allowed_colors:
+            try_add("Boseiju, Who Endures")
+            try_add("Yavimaya, Cradle of Growth")
+        if "B" in allowed_colors:
+            try_add("Urborg, Tomb of Yawgmoth")
+            try_add("Bojuka Bog")
+            try_add("Leechridden Swamp")
+        if "W" in allowed_colors:
+            try_add("High Market")
+    else:
+        if "B" in allowed_colors:
+            try_add("Bojuka Bog")
     try_add("Reliquary Tower")
 
     # Dual lands matching exact color pairs in commander identity
@@ -689,6 +829,46 @@ def assemble_lands(
         frozenset({"U", "G"}): ["Breeding Pool", "Rejuvenating Springs", "Yavimaya Coast", "Hinterland Harbor", "Misty Rainforest"]
     }
 
+    # Budget taplands & bounce lands
+    bounce_map = {
+        frozenset({"U", "B"}): "Dimir Aqueduct",
+        frozenset({"B", "G"}): "Golgari Rot Farm",
+        frozenset({"U", "R"}): "Izzet Boilerworks",
+        frozenset({"W", "B"}): "Orzhov Basilica",
+        frozenset({"R", "G"}): "Gruul Turf",
+        frozenset({"W", "U"}): "Azorius Chancery",
+        frozenset({"B", "R"}): "Rakdos Carnarium",
+        frozenset({"W", "G"}): "Selesnya Sanctuary",
+        frozenset({"W", "R"}): "Boros Garrison",
+        frozenset({"U", "G"}): "Simic Growth Chamber"
+    }
+
+    temple_map = {
+        frozenset({"U", "B"}): "Temple of Deceit",
+        frozenset({"B", "G"}): "Temple of Malady",
+        frozenset({"U", "R"}): "Temple of Epiphany",
+        frozenset({"W", "B"}): "Temple of Silence",
+        frozenset({"R", "G"}): "Temple of Abandon",
+        frozenset({"W", "U"}): "Temple of Enlightenment",
+        frozenset({"B", "R"}): "Temple of Malice",
+        frozenset({"W", "G"}): "Temple of Plenty",
+        frozenset({"W", "R"}): "Temple of Triumph",
+        frozenset({"U", "G"}): "Temple of Mystery"
+    }
+
+    gain_map = {
+        frozenset({"U", "B"}): "Dismal Backwater",
+        frozenset({"B", "G"}): "Jungle Hollow",
+        frozenset({"U", "R"}): "Swiftwater Cliffs",
+        frozenset({"W", "B"}): "Scoured Barrens",
+        frozenset({"R", "G"}): "Rugged Highlands",
+        frozenset({"W", "U"}): "Tranquil Cove",
+        frozenset({"B", "R"}): "Bloodfell Caves",
+        frozenset({"W", "G"}): "Blossoming Sands",
+        frozenset({"W", "R"}): "Wind-Scarred Crag",
+        frozenset({"U", "G"}): "Thornwood Falls"
+    }
+
     import itertools
     for pair in itertools.combinations(sorted(allowed_colors), 2):
         pair_set = frozenset(pair)
@@ -696,9 +876,21 @@ def assemble_lands(
             for d in dual_map[pair_set]:
                 if len(lands) >= target_lands - len(allowed_colors):
                     break
-                if budget == "budget" and ("Catacombs" in d or "Delta" in d or "Tarn" in d or "Heath" in d or "Strand" in d or "Flats" in d or "Mire" in d or "Misty" in d):
-                    continue
                 try_add(d)
+
+        # In budget and ultra_budget, inject bounce lands, scry temples, and gainlands
+        if budget in {"ultra_budget", "budget"} and len(lands) < target_lands - len(allowed_colors):
+            if pair_set in bounce_map:
+                try_add(bounce_map[pair_set])
+            if pair_set in temple_map:
+                try_add(temple_map[pair_set])
+            if budget == "ultra_budget" and pair_set in gain_map:
+                try_add(gain_map[pair_set])
+
+    if budget in {"ultra_budget", "budget"} and len(allowed_colors) >= 2:
+        try_add("Evolving Wilds")
+        try_add("Terramorphic Expanse")
+        try_add("Myriad Landscape")
 
     # 3. Pip-proportional basic land allocation
     pip_counts = {c: 0 for c in allowed_colors}
@@ -969,7 +1161,9 @@ def build_deck(
     bracket: int = 3,
     budget: str = "moderate",
     color_preference: str | list[str] = "",
-    preferred_win_con: str = "combat"
+    preferred_win_con: str = "combat",
+    house_rules: list[str] | set[str] | None = None,
+    custom_bans: list[str] | set[str] | None = None
 ) -> dict[str, Any]:
     """Assemble a tournament-legal 100-card Commander deck meeting all constraints and synergy quotas."""
     bracket = max(1, min(5, int(bracket)))
@@ -978,8 +1172,14 @@ def build_deck(
     if preferred_win_con not in WIN_CON_PACKAGES:
         preferred_win_con = "combat"
 
-    # In Brackets 1 and 2, infinite combos are strictly disallowed by specification
-    if not cfg["allow_combos"] and preferred_win_con == "combo":
+    house_rules_set = {str(r).strip().lower() for r in (house_rules or []) if str(r).strip()}
+    custom_bans_set = {str(b).strip().lower() for b in (custom_bans or []) if str(b).strip()}
+    budget = budget.strip().lower() if budget else "moderate"
+    if budget not in {"ultra_budget", "budget", "moderate", "unlimited"}:
+        budget = "moderate"
+
+    # In Brackets 1 and 2 or with no_combos house rule, infinite combos are strictly disallowed
+    if (not cfg["allow_combos"] or "no_combos" in house_rules_set) and preferred_win_con == "combo":
         preferred_win_con = "combat"
 
     raw_color_str = str(color_preference).strip().lower()
@@ -1015,6 +1215,8 @@ def build_deck(
                 raise ValueError(f"Commander '{r_name}' not found in tournament-legal database.")
             if not cmd.get("is_commander") or not cmd.get("commander_legal"):
                 raise ValueError(f"Card '{cmd['name']}' is not a tournament-legal Commander.")
+            if is_card_excluded(cmd["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                raise ValueError(f"Commander '{cmd['name']}' is prohibited by current house rules or ban list.")
             commanders.append(cmd)
     else:
         discovered = find_matching_commander(
@@ -1022,11 +1224,21 @@ def build_deck(
             prompt=deck_idea or preferred_win_con,
             color_pref=effective_color_pref,
             win_con=preferred_win_con,
-            bracket=bracket
+            bracket=bracket,
+            custom_bans=custom_bans_set
         )
         if not discovered:
             discovered = db.get_card_by_name(conn, "Belbe, Corrupted Observer")
-        if not discovered or not discovered.get("is_commander") or not discovered.get("commander_legal"):
+        if not discovered or not discovered.get("is_commander") or not discovered.get("commander_legal") or is_card_excluded(discovered["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+            # Fallback to first legal commander not banned
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM cards WHERE is_commander = 1 AND commander_legal = 1 ORDER BY edhrec_rank ASC LIMIT 50")
+            for row in cursor.fetchall():
+                c_cand = db.get_card_by_name(conn, row[0])
+                if c_cand and not is_card_excluded(c_cand["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                    discovered = c_cand
+                    break
+        if not discovered:
             raise ValueError("Could not find or resolve a valid tournament-legal Commander.")
         commanders.append(discovered)
 
@@ -1053,18 +1265,14 @@ def build_deck(
     pool = list(combined_pool_map.values())
     commander_names_lower = {cmd["name"].lower() for cmd in commanders}
 
-    # 3. Filter pool by Bracket & Budget rules
-    DISALLOWED_LOW_BRACKET_COMBOS = {
-        "dual caster mage", "dualcaster mage", "twinflame", "heliod, sun-crowned",
-        "walking ballista", "thassa's oracle", "demonic consultation", "underworld breach",
-        "kiki-jiki, mirror breaker", "zealous conscripts", "exquisite blood", "sanguine bond",
-        "lion's eye diamond"
-    }
-
+    # 3. Filter pool by Bracket, Budget, House Rules, & Custom Bans
     filtered_pool: list[dict[str, Any]] = []
     for c in pool:
         name_lower = c["name"].lower()
         if name_lower in commander_names_lower:
+            continue
+
+        if is_card_excluded(c["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
             continue
 
         if not cfg["allow_fast_mana"] and name_lower in FAST_MANA_CARDS:
@@ -1077,7 +1285,7 @@ def build_deck(
             continue
         if bracket <= 3 and name_lower in {"thassa's oracle", "demonic consultation", "underworld breach", "lion's eye diamond"}:
             continue
-        if budget == "budget" and name_lower in EXPENSIVE_RESERVED_LIST:
+        if budget in {"budget", "ultra_budget"} and name_lower in EXPENSIVE_RESERVED_LIST:
             continue
 
         filtered_pool.append(c)
@@ -1092,19 +1300,38 @@ def build_deck(
         nl = card["name"].lower()
         if nl in deck_cards or nl in commander_names_lower:
             return False
+        if is_card_excluded(card["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+            return False
         deck_cards[nl] = card
         categorized[role].append(card)
         return True
 
     # Format staple ramp (Sol Ring, Arcane Signet) for Brackets 2-5
-    if cfg["allow_sol_ring"]:
-        for rock_name in ["Sol Ring", "Arcane Signet"]:
-            card = db.get_card_by_name(conn, rock_name)
-            if card and set(card["color_identity"]).issubset(allowed_colors):
-                add_card(card, "ramp")
+    if cfg["allow_sol_ring"] and not is_card_excluded("Sol Ring", budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+        card = db.get_card_by_name(conn, "Sol Ring")
+        if card and set(card["color_identity"]).issubset(allowed_colors):
+            add_card(card, "ramp")
+
+    if not is_card_excluded("Arcane Signet", budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+        card = db.get_card_by_name(conn, "Arcane Signet")
+        if card and set(card["color_identity"]).issubset(allowed_colors):
+            add_card(card, "ramp")
+
+    # In budget or ultra_budget, inject common budget ramp options
+    if budget in {"ultra_budget", "budget"}:
+        budget_ramp = ["Mind Stone", "Commander's Sphere", "Wayfarer's Bauble", "Fellwar Stone"]
+        if "G" in allowed_colors:
+            budget_ramp.extend(["Rampant Growth", "Cultivate", "Kodama's Reach", "Sakura-Tribe Elder", "Farseek"])
+        for r_name in budget_ramp:
+            if not is_card_excluded(r_name, budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                r_card = db.get_card_by_name(conn, r_name)
+                if r_card and set(r_card["color_identity"]).issubset(allowed_colors):
+                    add_card(r_card, "ramp")
 
     if cfg["cedh_meta"]:
         for s_name in CEDH_STAPLES_BY_COLOR["colorless"]:
+            if is_card_excluded(s_name, budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                continue
             card = db.get_card_by_name(conn, s_name)
             if card and set(card["color_identity"]).issubset(allowed_colors):
                 role = "ramp" if "stone" in s_name.lower() or "mana" in s_name.lower() or "mox" in s_name.lower() or "sol" in s_name.lower() or "petal" in s_name.lower() or "signet" in s_name.lower() else "draw"
@@ -1112,6 +1339,8 @@ def build_deck(
 
         for col in allowed_colors:
             for s_name in CEDH_STAPLES_BY_COLOR.get(col, []):
+                if is_card_excluded(s_name, budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+                    continue
                 card = db.get_card_by_name(conn, s_name)
                 if card and set(card["color_identity"]).issubset(allowed_colors):
                     roles = classify_card_role(card)
@@ -1122,13 +1351,15 @@ def build_deck(
     for pkg_item in WIN_CON_PACKAGES[preferred_win_con]:
         if len(categorized["win_con"]) >= cfg["target_win_con"]:
             break
+        if is_card_excluded(pkg_item["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+            continue
         if pkg_item["colors"].issubset(allowed_colors):
             card = db.get_card_by_name(conn, pkg_item["name"])
             if card:
                 nl = card["name"].lower()
-                if not cfg["allow_combos"] and preferred_win_con == "combo":
+                if (not cfg["allow_combos"] or "no_combos" in house_rules_set) and preferred_win_con == "combo":
                     continue
-                if not cfg["allow_fast_mana"] and nl in FAST_MANA_CARDS:
+                if (not cfg["allow_fast_mana"] or "no_fast_mana" in house_rules_set) and nl in FAST_MANA_CARDS:
                     continue
                 if bracket <= 3 and nl in {"thassa's oracle", "demonic consultation", "underworld breach", "lion's eye diamond"}:
                     continue
@@ -1187,26 +1418,42 @@ def build_deck(
                 if add_card(c, "synergy"):
                     current_nonlands += 1
 
-    # 7. Assemble Lands (Exactly target_lands)
+    # 7. Assemble Lands (Adaptive target_lands for 100-card invariant guarantee)
     spells = [c for c in deck_cards.values() if "land" not in classify_card_role(c)]
+    target_lands = cfg["target_lands"]
+    target_nonlands = 100 - num_commanders - target_lands
+    if len(spells) < target_nonlands:
+        target_lands = 100 - num_commanders - len(spells)
+
     lands = assemble_lands(
         conn=conn,
         allowed_colors=allowed_colors,
-        target_lands=cfg["target_lands"],
+        target_lands=target_lands,
         spells=spells,
         bracket=bracket,
-        budget=budget
+        budget=budget,
+        house_rules=house_rules_set,
+        custom_bans=custom_bans_set
     )
     
     # Invariant Land Guarantee: Ensure lands length matches target_lands exactly
-    if len(lands) < cfg["target_lands"]:
-        basic_lookup = {"W": "Plains", "U": "Island", "B": "Swamp", "R": "Mountain", "G": "Forest"}
-        fallback_basic_name = basic_lookup[sorted(allowed_colors)[0]] if allowed_colors else "Wastes"
-        fallback_basic = db.get_card_by_name(conn, fallback_basic_name)
-        while len(lands) < cfg["target_lands"] and fallback_basic:
-            lands.append(fallback_basic)
-    elif len(lands) > cfg["target_lands"]:
-        lands = lands[:cfg["target_lands"]]
+    basic_lookup = {"W": "Plains", "U": "Island", "B": "Swamp", "R": "Mountain", "G": "Forest"}
+    fallback_basic_name = basic_lookup[sorted(allowed_colors)[0]] if allowed_colors else "Wastes"
+    fallback_basic = db.get_card_by_name(conn, fallback_basic_name)
+
+    while len(lands) < target_lands and fallback_basic:
+        lands.append(fallback_basic)
+    if len(lands) > target_lands:
+        lands = lands[:target_lands]
+
+    # Absolute 100-card invariant guarantee
+    current_total = num_commanders + len(spells) + len(lands)
+    while current_total < 100 and fallback_basic:
+        lands.append(fallback_basic)
+        current_total += 1
+    while current_total > 100 and len(lands) > 0:
+        lands.pop()
+        current_total -= 1
 
     categorized["lands"] = lands
 
@@ -1285,6 +1532,8 @@ def build_deck(
             "description": cfg["description"]
         },
         "budget": budget,
+        "house_rules": sorted(house_rules_set),
+        "custom_bans": sorted(custom_bans_set),
         "preferred_win_con": preferred_win_con,
         "win_con_execution": win_con_exec,
         "total_cards": num_commanders + len(spells) + len(lands),
