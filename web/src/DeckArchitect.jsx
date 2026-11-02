@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Sparkles,
-  Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers
+  Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers, ArrowRightLeft
 } from 'lucide-react';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import DeckExportModal from './components/DeckExportModal';
-import { exportToMoxfield, exportToArchidekt } from './utils/deckExport';
+import CardSwapModal from './components/CardSwapModal';
+import { 
+  exportToMoxfield, 
+  exportToArchidekt, 
+  exportToMtgo, 
+  exportToText, 
+  exportToCsv 
+} from './utils/deckExport';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -99,6 +106,119 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
   const [exportModalFormat, setExportModalFormat] = useState('moxfield');
   const [copiedMoxfield, setCopiedMoxfield] = useState(false);
   const [copiedArchidekt, setCopiedArchidekt] = useState(false);
+
+  // Card Swap State
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
+  const [activeSwapCard, setActiveSwapCard] = useState(null);
+  const [activeSwapRole, setActiveSwapRole] = useState('synergy');
+  const [toastMessage, setToastMessage] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  // Aggregated card names currently in the deck to prevent non-basic duplicates
+  const allDeckCardNames = useMemo(() => {
+    if (!deckResult?.categories) return [];
+    const names = [];
+    for (const group of Object.values(deckResult.categories)) {
+      if (Array.isArray(group)) {
+        for (const c of group) {
+          if (c?.name) names.push(c.name);
+        }
+      }
+    }
+    return names;
+  }, [deckResult]);
+
+  const handleOpenSwapModal = (card, role) => {
+    setActiveSwapCard(card);
+    setActiveSwapRole(role);
+    setIsSwapModalOpen(true);
+  };
+
+  const handleConfirmCardSwap = (oldCard, newCard, role) => {
+    if (!deckResult || !oldCard || !newCard) return;
+
+    const updatedCategories = { ...deckResult.categories };
+    const roleKey = role || 'synergy';
+    const roleCards = [...(updatedCategories[roleKey] || [])];
+
+    // Find first occurrence of oldCard
+    const replaceIdx = roleCards.findIndex(
+      (c) => c.name.toLowerCase() === oldCard.name.toLowerCase()
+    );
+
+    if (replaceIdx !== -1) {
+      roleCards[replaceIdx] = newCard;
+    } else {
+      roleCards.push(newCard);
+    }
+    updatedCategories[roleKey] = roleCards;
+
+    // Recalculate curve and avg_cmc across non-land mainboard cards
+    const nonlandCards = [];
+    for (const [catName, cards] of Object.entries(updatedCategories)) {
+      if (catName === 'commander' || catName === 'lands') continue;
+      for (const c of cards) {
+        const typeLine = (c.type_line || '').toLowerCase();
+        if (!typeLine.includes('land')) {
+          nonlandCards.push(c);
+        }
+      }
+    }
+
+    const avgCmc = nonlandCards.length > 0
+      ? Number((nonlandCards.reduce((sum, c) => sum + (Number(c.cmc) || 0), 0) / nonlandCards.length).toFixed(2))
+      : 0;
+
+    const manaCurve = { "0": 0, "1": 0, "2": 0, "3": 0, "4": 0, "5": 0, "6+": 0 };
+    for (const c of nonlandCards) {
+      const cmcVal = Math.floor(Number(c.cmc) || 0);
+      if (cmcVal >= 6) manaCurve["6+"] += 1;
+      else if (cmcVal >= 0) manaCurve[String(cmcVal)] += 1;
+    }
+
+    const updatedStats = {
+      ...deckResult.stats,
+      avg_cmc: avgCmc,
+      mana_curve: manaCurve,
+      roles: {
+        ...deckResult.stats?.roles,
+        lands: (updatedCategories.lands || []).length,
+        ramp: (updatedCategories.ramp || []).length,
+        draw: (updatedCategories.draw || []).length,
+        removal: (updatedCategories.removal || []).length,
+        win_con: (updatedCategories.win_con || []).length,
+        synergy: (updatedCategories.synergy || []).length
+      }
+    };
+
+    const updatedDeck = {
+      ...deckResult,
+      categories: updatedCategories,
+      stats: updatedStats
+    };
+
+    // Re-generate all platform export strings
+    const updatedExports = {
+      moxfield: exportToMoxfield(updatedDeck),
+      archidekt: exportToArchidekt(updatedDeck),
+      mtgo: exportToMtgo(updatedDeck),
+      text: exportToText(updatedDeck),
+      csv: exportToCsv(updatedDeck)
+    };
+    updatedDeck.exports = updatedExports;
+    updatedDeck.decklist_text = updatedExports.text;
+
+    setDeckResult(updatedDeck);
+
+    // Toast notification
+    setToastMessage(`Swapped ${oldCard.name} for ${newCard.name}`);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
 
   const toggleColor = (pip) => {
     if (pip === 'C') {
@@ -829,6 +949,35 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                               {card.type_line}
                             </div>
                           </div>
+
+                          {/* Swap Card Button (excluded for Commander) */}
+                          {sec.id !== 'commander' && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSwapModal(card, sec.id)}
+                              style={{
+                                marginTop: '8px',
+                                width: '100%',
+                                padding: '5px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.74rem',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '5px',
+                                background: 'rgba(168, 85, 247, 0.12)',
+                                border: '1px solid rgba(168, 85, 247, 0.35)',
+                                color: 'var(--text-accent, #bb8fdf)',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={`Swap ${card.name} for another ${sec.title}`}
+                            >
+                              <ArrowRightLeft size={12} />
+                              <span>Swap</span>
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -855,6 +1004,43 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
         deck={deckResult}
         initialFormat={exportModalFormat}
       />
+
+      {/* Interactive Card Swap Modal */}
+      <CardSwapModal
+        isOpen={isSwapModalOpen}
+        onClose={() => setIsSwapModalOpen(false)}
+        card={activeSwapCard}
+        role={activeSwapRole}
+        commander={deckResult?.commander?.name || (deckResult?.commanders || []).map((c) => c.name).join(' / ')}
+        bracket={deckResult?.bracket?.tier || 3}
+        exclude={allDeckCardNames}
+        onSwap={handleConfirmCardSwap}
+      />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 1100,
+            backgroundColor: '#10b981',
+            color: '#ffffff',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6), 0 0 16px rgba(16, 185, 129, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            fontWeight: '600',
+            fontSize: '0.86rem'
+          }}
+        >
+          <Check size={18} />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

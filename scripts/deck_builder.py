@@ -20,11 +20,13 @@ try:
     from scripts.hybrid_engine import detect_resource_profile
     from scripts.math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
     from scripts import deck_exporter
+    from scripts.card_swapper import get_swap_candidates
 except ImportError:
     import db
     from hybrid_engine import detect_resource_profile
     from math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
     import deck_exporter
+    from card_swapper import get_swap_candidates
 
 # --- COLOR & ALIAS DICTIONARIES ---
 COLOR_MAP: dict[str, set[str]] = {

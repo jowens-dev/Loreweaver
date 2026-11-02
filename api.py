@@ -16,6 +16,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+import card_swapper  # noqa: E402
 import db  # noqa: E402
 import deck_builder  # noqa: E402
 import hybrid_engine  # noqa: E402
@@ -89,6 +90,7 @@ def health_check() -> dict[str, Any]:
 def search_cards_endpoint(
     q: str = Query(default="", min_length=1, description="Card name prefix or query"),
     commanders_only: bool = Query(default=True, description="Filter results to legal commanders"),
+    commander: str = Query(default="", description="Optional commander name to filter results by legal color identity"),
     limit: int = Query(default=8, ge=1, le=50, description="Max results")
 ) -> list[dict[str, Any]]:
     """Predictive autocomplete search for cards and commanders by name."""
@@ -98,8 +100,57 @@ def search_cards_endpoint(
         raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
 
     try:
-        results = db.search_cards_predictive(conn=conn, query=q, commanders_only=commanders_only, limit=limit)
+        allowed_colors = None
+        if commander.strip():
+            comm_names = [p.strip() for p in commander.strip().split(" / ") if p.strip()]
+            resolved_colors = set()
+            for cn in comm_names[:2]:
+                card = db.get_card_by_name(conn, cn)
+                if card:
+                    resolved_colors.update(card.get("color_identity", []))
+            if resolved_colors or commander.strip().lower() in {"colorless", "c"}:
+                allowed_colors = resolved_colors
+
+        results = db.search_cards_predictive(
+            conn=conn,
+            query=q,
+            commanders_only=commanders_only,
+            limit=limit,
+            allowed_colors=allowed_colors
+        )
         return results
+    finally:
+        conn.close()
+
+
+@app.get("/api/swap-candidates")
+def get_swap_candidates_endpoint(
+    card_name: str = Query(..., description="The card to replace"),
+    commander: str = Query(default="", description="Commander name to resolve color identity"),
+    category: str = Query(default="synergy", description="The operational role: 'ramp', 'draw', 'removal', 'win_con', 'synergy', 'lands'"),
+    bracket: int = Query(default=3, ge=1, le=5, description="Commander bracket tier (1 to 5)"),
+    exclude: list[str] = Query(default=[], description="Card names already in the deck to prevent non-basic duplicates"),
+    limit: int = Query(default=8, ge=1, le=50, description="Max candidate cards to return")
+) -> list[dict[str, Any]]:
+    """Retrieve scored, legal candidate replacement cards for an individual deck slot."""
+    try:
+        conn = db.get_connection()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
+
+    try:
+        candidates = card_swapper.get_swap_candidates(
+            conn=conn,
+            card_name=card_name,
+            commander_name=commander,
+            category=category,
+            bracket=bracket,
+            exclude=exclude,
+            limit=limit
+        )
+        return candidates
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Swap candidates error: {e}")
     finally:
         conn.close()
 

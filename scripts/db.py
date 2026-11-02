@@ -166,7 +166,8 @@ def search_cards_predictive(
     conn: sqlite3.Connection,
     query: str,
     commanders_only: bool = True,
-    limit: int = 8
+    limit: int = 8,
+    allowed_colors: list[str] | set[str] | str | None = None
 ) -> list[dict[str, Any]]:
     """Predictive search for cards by prefix/word-boundary with popularity ranking."""
     clean_q = query.strip().lower()
@@ -183,8 +184,15 @@ def search_cards_predictive(
     else:
         conditions.append("commander_legal = 1")
 
+    params: list[Any] = []
+    if allowed_colors is not None:
+        legal_identities = get_legal_color_identities(allowed_colors)
+        placeholders = ",".join("?" * len(legal_identities))
+        conditions.append(f"color_identity IN ({placeholders})")
+        params.extend(legal_identities)
+
     conditions.append("(name_lower LIKE ? OR name_lower LIKE ?)")
-    params = [f"{clean_q}%", f"% {clean_q}%"]
+    params.extend([f"{clean_q}%", f"% {clean_q}%"])
 
     sql = f"""
         SELECT id, name, name_lower, mana_cost, cmc, type_line, types,
