@@ -501,3 +501,26 @@ h2 {
     border-color: #a855f7;
   }
 }
+
+/* Card Tooltip Animations & Styles */
+@keyframes loreweaverFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.loreweaver-tooltip-trigger {
+  display: inline-flex;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.loreweaver-tooltip-trigger:hover {
+  filter: brightness(1.1);
+}
+

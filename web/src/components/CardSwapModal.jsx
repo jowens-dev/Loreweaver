@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   X, ArrowRightLeft, Dices, Search, Sparkles, RefreshCw, AlertCircle, Check
 } from 'lucide-react';
+import CardTooltip from './CardTooltip';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -228,7 +229,12 @@ export default function CardSwapModal({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-white, #ffffff)', fontWeight: '700' }}>
-                  Swap Card: {card.name}
+                  Swap Card:{' '}
+                  <CardTooltip card={card} name={card.name}>
+                    <span style={{ cursor: 'pointer', borderBottom: '1px dashed rgba(255,255,255,0.4)' }}>
+                      {card.name}
+                    </span>
+                  </CardTooltip>
                 </h3>
                 <span
                   style={{
@@ -391,9 +397,11 @@ export default function CardSwapModal({
                   >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontWeight: 'bold', fontSize: '0.84rem', color: 'var(--text-white)' }}>
-                          {res.name}
-                        </span>
+                        <CardTooltip card={res} name={res.name}>
+                          <span style={{ fontWeight: 'bold', fontSize: '0.84rem', color: 'var(--text-white)', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                            {res.name}
+                          </span>
+                        </CardTooltip>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                           {res.mana_cost}
                         </span>
@@ -515,49 +523,55 @@ export default function CardSwapModal({
                       }}
                     >
                       {/* Image Thumbnail */}
-                      {cand.image_url ? (
-                        <img
-                          src={cand.image_url}
-                          alt={cand.name}
-                          loading="lazy"
-                          style={{
-                            width: '100%',
-                            borderRadius: '4px',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
-                          }}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            width: '100%',
-                            height: '110px',
-                            background: '#1e293b',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.72rem',
-                            color: 'var(--text-muted)'
-                          }}
-                        >
-                          No Image
-                        </div>
-                      )}
+                      <CardTooltip card={cand} name={cand.name} style={{ width: '100%' }}>
+                        <div style={{ width: '100%', cursor: 'pointer' }}>
+                          {cand.image_url ? (
+                            <img
+                              src={cand.image_url}
+                              alt={cand.name}
+                              loading="lazy"
+                              style={{
+                                width: '100%',
+                                borderRadius: '4px',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: '100%',
+                                height: '110px',
+                                background: '#1e293b',
+                                borderRadius: '4px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.72rem',
+                                color: 'var(--text-muted)'
+                              }}
+                            >
+                              No Image
+                            </div>
+                          )}
 
-                      {/* Card Details */}
+                          {/* Card Details */}
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px', marginTop: '6px' }}>
+                              <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2', color: 'var(--text-white)' }}>
+                                {cand.name}
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                {cand.mana_cost}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                              {cand.type_line}
+                            </div>
+                          </div>
+                        </div>
+                      </CardTooltip>
+
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
-                          <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2', color: 'var(--text-white)' }}>
-                            {cand.name}
-                          </span>
-                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {cand.mana_cost}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {cand.type_line}
-                        </div>
-
                         {/* Reason Badge */}
                         {cand.reason && (
                           <div

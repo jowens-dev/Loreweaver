@@ -5,6 +5,7 @@ import { analyzeStress } from './utils/stressTester';
 import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInjector';
 import DeckArchitect from './DeckArchitect';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
+import CardTooltip from './components/CardTooltip';
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -628,7 +629,11 @@ function App() {
                         <div key={idx} style={{ backgroundColor: 'var(--bg-input)', padding: '12px', borderRadius: '8px', borderLeft: '3px solid var(--color-orange)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                             <div>
-                              <strong style={{ color: 'var(--color-red)', fontSize: '0.95rem' }}>{cut.card}</strong>
+                              <CardTooltip name={cut.card}>
+                                <strong style={{ color: 'var(--color-red)', fontSize: '0.95rem', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                                  {cut.card}
+                                </strong>
+                              </CardTooltip>
                               <span style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: 'var(--bg-panel)', padding: '2px 6px', borderRadius: '4px', color: 'var(--text-accent)' }}>
                                 {cut.cmc} CMC
                               </span>
@@ -646,7 +651,13 @@ function App() {
                                 }}
                                 onClick={() => handleSwapCard(cut.card, cut.suggested_replacement)}
                               >
-                                Swap for <strong>{cut.suggested_replacement}</strong> ➔
+                                Swap for{' '}
+                                <CardTooltip name={cut.suggested_replacement}>
+                                  <strong style={{ textDecoration: 'underline', textUnderlineOffset: '2px' }}>
+                                    {cut.suggested_replacement}
+                                  </strong>
+                                </CardTooltip>{' '}
+                                ➔
                               </button>
                             )}
                           </div>
@@ -667,9 +678,11 @@ function App() {
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
                       {backendAnalysis.protected_pillars.map((pillar, i) => (
-                        <span key={i} style={{ backgroundColor: 'rgba(39, 174, 96, 0.15)', color: 'var(--color-green)', border: '1px solid rgba(39, 174, 96, 0.3)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '500' }}>
-                          ✓ {pillar}
-                        </span>
+                        <CardTooltip key={i} name={pillar}>
+                          <span style={{ backgroundColor: 'rgba(39, 174, 96, 0.15)', color: 'var(--color-green)', border: '1px solid rgba(39, 174, 96, 0.3)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '500', cursor: 'pointer' }}>
+                            ✓ {pillar}
+                          </span>
+                        </CardTooltip>
                       ))}
                     </div>
                   </div>
@@ -920,15 +933,17 @@ function App() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
                         {spiceRecommendations.map((card, idx) => (
-                          <div key={idx} style={{ padding: '8px 10px', backgroundColor: 'var(--bg-input)', borderRadius: '6px', fontSize: '0.85rem' }}>
-                            <div style={{ fontWeight: 'bold', color: 'var(--text-white)', display: 'flex', justifyContent: 'space-between' }}>
-                              <span>{card.name}</span>
-                              <span style={{ color: 'var(--text-accent)' }}>{card.mana_cost}</span>
+                          <CardTooltip key={idx} card={card} name={card.name} style={{ display: 'block' }}>
+                            <div style={{ padding: '8px 10px', backgroundColor: 'var(--bg-input)', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>
+                              <div style={{ fontWeight: 'bold', color: 'var(--text-white)', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{card.name}</span>
+                                <span style={{ color: 'var(--text-accent)' }}>{card.mana_cost}</span>
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-accent)', fontStyle: 'italic', marginTop: '2px' }}>
+                                {card.type_line}{card.edhrec_rank ? ` (Rank #${card.edhrec_rank})` : ''}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-accent)', fontStyle: 'italic', marginTop: '2px' }}>
-                              {card.type_line}{card.edhrec_rank ? ` (Rank #${card.edhrec_rank})` : ''}
-                            </div>
-                          </div>
+                          </CardTooltip>
                         ))}
                       </div>
                     </div>
@@ -994,50 +1009,57 @@ function App() {
                           <div className="form-label" style={{ marginBottom: '12px' }}>{lane.title}</div>
                           <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }}>
                             {lane.cards.map((card, idx) => (
-                              <div
+                              <CardTooltip
                                 key={`${lane.title}-${card.name}-${idx}`}
-                                className="card"
-                                style={{
-                                  flex: '0 0 280px',
-                                  marginBottom: 0,
-                                  border: '1px solid var(--border-purple)',
-                                  backgroundColor: 'var(--bg-panel)'
-                                }}
+                                card={card}
+                                name={card.name}
+                                style={{ flex: '0 0 280px', display: 'flex' }}
                               >
                                 <div
+                                  className="card"
                                   style={{
                                     width: '100%',
-                                    aspectRatio: '3 / 4',
-                                    overflow: 'hidden',
-                                    borderRadius: '12px',
-                                    marginBottom: '12px',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                                    border: '1px solid rgba(255, 255, 255, 0.08)'
+                                    marginBottom: 0,
+                                    border: '1px solid var(--border-purple)',
+                                    backgroundColor: 'var(--bg-panel)',
+                                    cursor: 'pointer'
                                   }}
                                 >
-                                  <img
-                                    src={card.image_url || CARD_BACK_FALLBACK}
-                                    alt={card.name}
-                                    className="h-full w-full object-cover"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                    onError={(event) => {
-                                      if (event.currentTarget.src !== CARD_BACK_FALLBACK) {
-                                        event.currentTarget.src = CARD_BACK_FALLBACK;
-                                      }
+                                  <div
+                                    style={{
+                                      width: '100%',
+                                      aspectRatio: '3 / 4',
+                                      overflow: 'hidden',
+                                      borderRadius: '12px',
+                                      marginBottom: '12px',
+                                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                                      border: '1px solid rgba(255, 255, 255, 0.08)'
                                     }}
-                                  />
+                                  >
+                                    <img
+                                      src={card.image_url || CARD_BACK_FALLBACK}
+                                      alt={card.name}
+                                      className="h-full w-full object-cover"
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                      onError={(event) => {
+                                        if (event.currentTarget.src !== CARD_BACK_FALLBACK) {
+                                          event.currentTarget.src = CARD_BACK_FALLBACK;
+                                        }
+                                      }}
+                                    />
+                                  </div>
+                                  <h3 style={{ fontSize: '1rem', color: 'var(--text-white)', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>{card.name}</span>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-accent)' }}>{card.mana_cost}</span>
+                                  </h3>
+                                  <p style={{ fontSize: '0.75rem', color: 'var(--text-accent)', marginBottom: '8px', fontStyle: 'italic' }}>
+                                    {card.type_line}{card.edhrec_rank ? ` (Rank #${card.edhrec_rank})` : ''}
+                                  </p>
+                                  <p style={{ fontSize: '0.8rem', lineHeight: '1.4', color: 'var(--text-main)' }}>
+                                    {card.oracle_text}
+                                  </p>
                                 </div>
-                                <h3 style={{ fontSize: '1rem', color: 'var(--text-white)', display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>{card.name}</span>
-                                  <span style={{ fontSize: '0.85rem', color: 'var(--text-accent)' }}>{card.mana_cost}</span>
-                                </h3>
-                                <p style={{ fontSize: '0.75rem', color: 'var(--text-accent)', marginBottom: '8px', fontStyle: 'italic' }}>
-                                  {card.type_line}{card.edhrec_rank ? ` (Rank #${card.edhrec_rank})` : ''}
-                                </p>
-                                <p style={{ fontSize: '0.8rem', lineHeight: '1.4', color: 'var(--text-main)' }}>
-                                  {card.oracle_text}
-                                </p>
-                              </div>
+                              </CardTooltip>
                             ))}
                           </div>
                         </section>

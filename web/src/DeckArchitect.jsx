@@ -6,6 +6,7 @@ import {
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import DeckExportModal from './components/DeckExportModal';
 import CardSwapModal from './components/CardSwapModal';
+import CardTooltip from './components/CardTooltip';
 import { 
   exportToMoxfield, 
   exportToArchidekt, 
@@ -643,17 +644,21 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
             }}>
               <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {deckResult.commander?.image_url && (
-                  <img
-                    src={deckResult.commander.image_url}
-                    alt={deckResult.commander.name}
-                    style={{ width: '120px', borderRadius: '8px', boxShadow: '0 4px 14px rgba(0,0,0,0.6)' }}
-                  />
+                  <CardTooltip card={deckResult.commander} name={deckResult.commander.name}>
+                    <img
+                      src={deckResult.commander.image_url}
+                      alt={deckResult.commander.name}
+                      style={{ width: '120px', borderRadius: '8px', boxShadow: '0 4px 14px rgba(0,0,0,0.6)', cursor: 'pointer' }}
+                    />
+                  </CardTooltip>
                 )}
                 <div style={{ flex: 1, minWidth: '280px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.45rem', color: 'var(--text-accent)' }}>
-                      {deckResult.commander?.name}
-                    </h3>
+                    <CardTooltip card={deckResult.commander} name={deckResult.commander?.name}>
+                      <h3 style={{ margin: 0, fontSize: '1.45rem', color: 'var(--text-accent)', cursor: 'pointer' }}>
+                        {deckResult.commander?.name}
+                      </h3>
+                    </CardTooltip>
                     <span style={{ 
                       background: BRACKET_DEFINITIONS[deckResult.bracket?.tier - 1]?.color || '#3b82f6',
                       color: '#ffffff',
@@ -913,42 +918,46 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                             borderRadius: '6px'
                           }}
                         >
-                          {card.image_url ? (
-                            <img
-                              src={card.image_url}
-                              alt={card.name}
-                              loading="lazy"
-                              style={{ width: '100%', borderRadius: '4px', marginBottom: '8px' }}
-                            />
-                          ) : (
-                            <div style={{ 
-                              width: '100%', 
-                              height: '120px', 
-                              background: '#1e293b', 
-                              borderRadius: '4px', 
-                              marginBottom: '8px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '0.75rem',
-                              color: 'var(--text-muted)'
-                            }}>
-                              No Image
+                          <CardTooltip card={card} name={card.name} style={{ width: '100%' }}>
+                            <div style={{ width: '100%', cursor: 'pointer' }}>
+                              {card.image_url ? (
+                                <img
+                                  src={card.image_url}
+                                  alt={card.name}
+                                  loading="lazy"
+                                  style={{ width: '100%', borderRadius: '4px', marginBottom: '8px' }}
+                                />
+                              ) : (
+                                <div style={{ 
+                                  width: '100%', 
+                                  height: '120px', 
+                                  background: '#1e293b', 
+                                  borderRadius: '4px', 
+                                  marginBottom: '8px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.75rem',
+                                  color: 'var(--text-muted)'
+                                }}>
+                                  No Image
+                                </div>
+                              )}
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
+                                  <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2' }}>
+                                    {card.count > 1 ? `${card.count}x ` : ''}{card.name}
+                                  </span>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                    {card.mana_cost}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {card.type_line}
+                                </div>
+                              </div>
                             </div>
-                          )}
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px' }}>
-                              <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2' }}>
-                                {card.count > 1 ? `${card.count}x ` : ''}{card.name}
-                              </span>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                {card.mana_cost}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                              {card.type_line}
-                            </div>
-                          </div>
+                          </CardTooltip>
 
                           {/* Swap Card Button (excluded for Commander) */}
                           {sec.id !== 'commander' && (
