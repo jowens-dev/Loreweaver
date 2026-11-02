@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { 
   Sparkles,
   Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers, ArrowRightLeft,
-  Shield, ChevronDown, ChevronUp, X, Plus
+  Shield, ChevronDown, ChevronUp, X, Plus, ShoppingCart
 } from 'lucide-react';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import DeckExportModal from './components/DeckExportModal';
@@ -10,10 +10,12 @@ import CardSwapModal from './components/CardSwapModal';
 import CardTooltip from './components/CardTooltip';
 import { 
   exportToMoxfield, 
+  exportToTcgplayer,
   exportToArchidekt, 
   exportToMtgo, 
   exportToText, 
-  exportToCsv 
+  exportToCsv,
+  getTcgplayerMassEntryUrl
 } from './utils/deckExport';
 
 const getApiBaseUrl = () => {
@@ -112,6 +114,7 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
   const [exportModalFormat, setExportModalFormat] = useState('moxfield');
   const [copiedMoxfield, setCopiedMoxfield] = useState(false);
   const [copiedArchidekt, setCopiedArchidekt] = useState(false);
+  const [buyingTcgplayer, setBuyingTcgplayer] = useState(false);
 
   // Card Swap State
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -313,6 +316,17 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     navigator.clipboard.writeText(text);
     setCopiedArchidekt(true);
     setTimeout(() => setCopiedArchidekt(false), 2400);
+  };
+
+  const handleBuyTcgplayer = () => {
+    if (!deckResult) return;
+    const text = deckResult.exports?.tcgplayer || exportToTcgplayer(deckResult);
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setBuyingTcgplayer(true);
+    const url = getTcgplayerMassEntryUrl(deckResult);
+    window.open(url, '_blank');
+    setTimeout(() => setBuyingTcgplayer(false), 3000);
   };
 
   const handleSendToAnalyzer = () => {
@@ -953,6 +967,47 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
 
               {/* Export Action Bar */}
               <div className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' }}>
+                {/* Prominent TCGplayer Affiliate Commerce Button */}
+                <button
+                  onClick={handleBuyTcgplayer}
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    fontSize: '0.82rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    borderRadius: '8px',
+                    border: buyingTcgplayer ? '1px solid #22c55e' : '1px solid #f59e0b',
+                    background: buyingTcgplayer 
+                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(21, 128, 61, 0.35))'
+                      : 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(234, 179, 8, 0.35))',
+                    color: buyingTcgplayer ? '#4ade80' : '#fbbf24',
+                    boxShadow: buyingTcgplayer
+                      ? '0 0 14px rgba(34, 197, 94, 0.4)'
+                      : '0 0 14px rgba(245, 158, 11, 0.25)',
+                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: buyingTcgplayer ? 'scale(1.01)' : 'scale(1)'
+                  }}
+                  title="Copy 100-card decklist and open TCGplayer Mass Entry"
+                >
+                  {buyingTcgplayer ? (
+                    <>
+                      <Check size={14} style={{ color: '#4ade80' }} />
+                      <span>Deck copied! Opening TCGplayer...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart size={14} />
+                      <span>🛒 Buy on TCGplayer</span>
+                    </>
+                  )}
+                </button>
+
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={handleFastCopyMoxfield}

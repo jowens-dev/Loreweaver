@@ -6,6 +6,7 @@ import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInje
 import DeckArchitect from './DeckArchitect';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import CardTooltip from './components/CardTooltip';
+import SupportModal from './components/SupportModal';
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -115,6 +116,7 @@ const mapRecommendationResponse = (payload) => {
 
 function App() {
   const [activeTab, setActiveTab] = useState('builder');
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [commander, setCommander] = useState('Kozilek, the Great Distortion');
   const [bracket, setBracket] = useState(2);
   const [targetIX, setTargetIX] = useState('Aggro-Combat');
@@ -392,9 +394,34 @@ function App() {
   return (
     <div className="app-container">
       {/* Header */}
-      <header className="app-header">
-        <img src="/logo.png" alt="Loreweaver Logo" className="logo-img" />
-        <h1 className="app-title">Loreweaver</h1>
+      <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img src="/logo.png" alt="Loreweaver Logo" className="logo-img" />
+          <h1 className="app-title" style={{ margin: 0 }}>Loreweaver</h1>
+        </div>
+        <button
+          onClick={() => setIsSupportModalOpen(true)}
+          className="btn"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '7px 14px',
+            borderRadius: '20px',
+            fontSize: '0.84rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 179, 8, 0.3))',
+            border: '1px solid #f59e0b',
+            color: '#fef08a',
+            transition: 'all 0.15s ease',
+            boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+          }}
+          title="Support Loreweaver development"
+        >
+          <span>☕</span>
+          <span>Support</span>
+        </button>
       </header>
 
       {/* Main Tab Switcher */}
@@ -1122,10 +1149,44 @@ function App() {
         </button>
       </nav>
 
-      {/* Subtle WotC Policy Disclaimer Footer */}
-      <footer style={{ textAlign: 'center', padding: '6px 12px', fontSize: '0.68rem', color: 'var(--text-muted)', opacity: 0.6 }}>
-        Unofficial Fan Content permitted under the <a href="https://company.wizards.com/fancontentpolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}>WotC Fan Content Policy</a>. © Wizards of the Coast LLC.
+      {/* Footer */}
+      <footer style={{ textAlign: 'center', padding: '10px 12px', fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+        <div>
+          <button
+            onClick={() => setIsSupportModalOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-accent)',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              textDecoration: 'underline',
+              padding: 0
+            }}
+          >
+            💖 Support Loreweaver
+          </button>
+          {' • '}
+          <a
+            href="https://github.com/jowens-dev/Loreweaver"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}
+          >
+            Open Source on GitHub
+          </a>
+        </div>
+        <div style={{ fontSize: '0.66rem', opacity: 0.6 }}>
+          Unofficial Fan Content permitted under the <a href="https://company.wizards.com/fancontentpolicy" target="_blank" rel="noreferrer" style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}>WotC Fan Content Policy</a>. © Wizards of the Coast LLC.
+        </div>
       </footer>
+
+      {/* Support Modal */}
+      <SupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
     </div>
   );
 }

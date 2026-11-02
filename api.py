@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -88,12 +88,14 @@ def health_check() -> dict[str, Any]:
 
 @app.get("/api/search")
 def search_cards_endpoint(
+    response: Response,
     q: str = Query(default="", min_length=1, description="Card name prefix or query"),
     commanders_only: bool = Query(default=True, description="Filter results to legal commanders"),
     commander: str = Query(default="", description="Optional commander name to filter results by legal color identity"),
     limit: int = Query(default=8, ge=1, le=50, description="Max results")
 ) -> list[dict[str, Any]]:
     """Predictive autocomplete search for cards and commanders by name."""
+    response.headers["Cache-Control"] = "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800"
     try:
         conn = db.get_connection()
     except Exception as e:
@@ -125,6 +127,7 @@ def search_cards_endpoint(
 
 @app.get("/api/swap-candidates")
 def get_swap_candidates_endpoint(
+    response: Response,
     card_name: str = Query(..., description="The card to replace"),
     commander: str = Query(default="", description="Commander name to resolve color identity"),
     category: str = Query(default="synergy", description="The operational role: 'ramp', 'draw', 'removal', 'win_con', 'synergy', 'lands'"),
@@ -133,6 +136,7 @@ def get_swap_candidates_endpoint(
     limit: int = Query(default=8, ge=1, le=50, description="Max candidate cards to return")
 ) -> list[dict[str, Any]]:
     """Retrieve scored, legal candidate replacement cards for an individual deck slot."""
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=3600"
     try:
         conn = db.get_connection()
     except Exception as e:
@@ -157,10 +161,12 @@ def get_swap_candidates_endpoint(
 
 @app.get("/api/recommendations")
 def get_recommendations(
+    response: Response,
     commander: str = Query(default="", description="Name of the commander to build around"),
     spice: int = Query(default=50, ge=0, le=100, description="Flavor spice dial (0=Staples, 50=Balanced, 100=Deep Cuts)")
 ) -> list[dict[str, Any]]:
     """Return categorized card recommendations matching the commander's color identity and spice level."""
+    response.headers["Cache-Control"] = "public, max-age=3600, s-maxage=3600"
     try:
         conn = db.get_connection()
     except Exception as e:

@@ -3,6 +3,7 @@
  *
  * Supported formats:
  * - Moxfield Format (Tagged with *CMDR*, exact 100 cards)
+ * - TCGplayer Mass Entry Format (1 Card Name, exact 100 cards)
  * - Archidekt Format (1x Name *CMDR* [Commander], 1x Name [Category])
  * - MTGO .dec Format (// Commander, // Mainboard)
  * - Plain Text .txt Format (Categorized clean text list)
@@ -87,6 +88,42 @@ export function exportToMoxfield(deck) {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * TCGplayer Mass Entry Format:
+ * 1 Commander Name
+ * 1 Sol Ring
+ * 10 Forest
+ * ...
+ * Clean format ready for direct paste into TCGplayer mass entry.
+ */
+export function exportToTcgplayer(deck) {
+  if (!deck) return '';
+  const commanders = getCommanders(deck);
+  const lines = [];
+
+  for (const cmd of commanders) {
+    lines.push(`1 ${cmd.name}`);
+  }
+
+  const roleOrder = ['win_con', 'ramp', 'draw', 'removal', 'synergy', 'lands'];
+  for (const role of roleOrder) {
+    const list = deck.categories?.[role] || [];
+    const grouped = groupCards(list);
+    for (const card of grouped) {
+      lines.push(`${card.count} ${card.name}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Returns the TCGplayer Mass Entry URL with affiliate attribution.
+ */
+export function getTcgplayerMassEntryUrl(_deck) {
+  return 'https://www.tcgplayer.com/massentry?productline=Magic&utm_source=Loreweaver&utm_medium=affiliate&partner=Loreweaver';
 }
 
 /**

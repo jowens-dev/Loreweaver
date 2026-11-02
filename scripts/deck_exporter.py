@@ -94,6 +94,29 @@ def export_to_moxfield(deck: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def export_to_tcgplayer(deck: dict[str, Any]) -> str:
+    """Generate clean TCGplayer Mass Entry format decklist.
+    
+    Format:
+    1 Belbe, Corrupted Observer
+    1 Sol Ring
+    ...
+    Guaranteed exact 100 cards total, ready for paste into TCGplayer Mass Entry.
+    """
+    lines: list[str] = []
+    commanders = _get_commanders(deck)
+    for cmd in commanders:
+        lines.append(f"1 {cmd['name']}")
+
+    categorized = _get_categorized_cards(deck)
+    for role, card_list in categorized.items():
+        grouped = _group_cards_by_name(card_list)
+        for card in grouped:
+            lines.append(f"{card['count']} {card['name']}")
+
+    return "\n".join(lines)
+
+
 def export_to_archidekt(deck: dict[str, Any]) -> str:
     """Generate Archidekt format decklist.
     
@@ -203,6 +226,7 @@ def export_all_formats(deck: dict[str, Any]) -> dict[str, str]:
     """Generate all export formats for a deck dictionary."""
     return {
         "moxfield": export_to_moxfield(deck),
+        "tcgplayer": export_to_tcgplayer(deck),
         "archidekt": export_to_archidekt(deck),
         "mtgo": export_to_mtgo(deck),
         "text": export_to_text(deck),

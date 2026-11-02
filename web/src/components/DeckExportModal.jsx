@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Copy, Check, Download, ExternalLink, X, FileText, Table, Terminal, Layers
+  Copy, Check, Download, ExternalLink, X, FileText, Table, Terminal, Layers, ShoppingCart
 } from 'lucide-react';
 import {
   exportToMoxfield,
+  exportToTcgplayer,
   exportToArchidekt,
   exportToMtgo,
   exportToText,
   exportToCsv,
   countExportCards,
   downloadDeckFile,
-  getCommanders
+  getCommanders,
+  getTcgplayerMassEntryUrl
 } from '../utils/deckExport';
 
 const EXPORT_FORMATS = [
@@ -22,6 +24,15 @@ const EXPORT_FORMATS = [
     icon: Layers,
     badge: 'Popular',
     desc: 'Paste directly into Moxfield bulk import. Commanders tagged with *CMDR* for automatic commander assignment.'
+  },
+  {
+    id: 'tcgplayer',
+    name: 'TCGplayer',
+    ext: '.txt',
+    mime: 'text/plain;charset=utf-8',
+    icon: ShoppingCart,
+    badge: 'Affiliate Commerce',
+    desc: 'Clean 100-card Mass Entry list for fast ordering via TCGplayer Mass Entry.'
   },
   {
     id: 'archidekt',
@@ -94,6 +105,8 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
     switch (activeFormat) {
       case 'moxfield':
         return deck.exports?.moxfield || exportToMoxfield(deck);
+      case 'tcgplayer':
+        return deck.exports?.tcgplayer || exportToTcgplayer(deck);
       case 'archidekt':
         return deck.exports?.archidekt || exportToArchidekt(deck);
       case 'mtgo':
@@ -320,7 +333,7 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
               {currentFormatMeta.desc}
             </div>
 
-            {/* Quick Links for Moxfield / Archidekt */}
+            {/* Quick Links for Moxfield / Archidekt / TCGplayer */}
             {activeFormat === 'moxfield' && (
               <a
                 href="https://www.moxfield.com/decks/personal"
@@ -341,6 +354,31 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
                 }}
               >
                 <span>Open Moxfield</span>
+                <ExternalLink size={12} />
+              </a>
+            )}
+
+            {activeFormat === 'tcgplayer' && (
+              <a
+                href={getTcgplayerMassEntryUrl(deck)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#fbbf24',
+                  fontSize: '0.78rem',
+                  textDecoration: 'none',
+                  fontWeight: '600',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  border: '1px solid rgba(245, 158, 11, 0.4)'
+                }}
+              >
+                <ShoppingCart size={13} />
+                <span>Open in TCGplayer Mass Entry</span>
                 <ExternalLink size={12} />
               </a>
             )}
@@ -369,6 +407,27 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
               </a>
             )}
           </div>
+
+          {/* TCGplayer Affiliate Explanatory Note */}
+          {activeFormat === 'tcgplayer' && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(180, 83, 9, 0.08))',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              fontSize: '0.8rem',
+              color: '#fef08a',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              lineHeight: '1.45'
+            }}>
+              <span style={{ fontSize: '1.1rem', lineHeight: '1' }}>🛒</span>
+              <div>
+                Copy this list and paste into TCGplayer Mass Entry to automatically load all 100 cards into your cart. Purchasing through this link supports Loreweaver hosting costs at no extra charge to you!
+              </div>
+            </div>
+          )}
 
           {/* Decklist Textarea Preview */}
           <div style={{ position: 'relative' }}>
