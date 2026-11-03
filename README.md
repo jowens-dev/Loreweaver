@@ -65,7 +65,8 @@
 - **MTGO `.dec` download:** Native Magic Online deck file with separate `// Commander` and `// Mainboard` blocks.
 - **Plain text `.txt` download:** Categorized, human-readable decklist.
 - **Spreadsheet `.csv` export:** Structured tabular export (`Count,Name,Category,CMC,Type`) with RFC 4180 CSV escaping.
-- **🛒 Buy on TCGplayer:** 1-click cart transfer that copies the mass entry list and opens TCGplayer Mass Entry with your affiliate tag (`partner=Loreweaver`).
+- **⚡ Buy on Mana Pool (5% affiliate):** 1-click cart transfer that copies the mass entry list and opens Mana Pool Mass Entry with Cart Optimizer and affiliate attribution (`ref=loreweaver`).
+- **🛒 Buy on TCGplayer:** Mass entry list export for ordering via TCGplayer Mass Entry.
 
 ### 6. Dynamic hover visuals & card tooltips
 - **Portal-based floating tooltip:** High-resolution Scryfall card imagery anywhere in the app (Architect, Analyzer, cuts, swimlanes, and swap modal).
@@ -326,7 +327,7 @@ Loreweaver is 100% free, open-source, and unmonetized by design. If Loreweaver h
 - **General contact:** [`contact@lore-weaver.app`](mailto:contact@lore-weaver.app)
 - **Community greetings:** [`hello@lore-weaver.app`](mailto:hello@lore-weaver.app)
 - **GitHub Issues:** [https://github.com/jowens-dev/Loreweaver/issues](https://github.com/jowens-dev/Loreweaver/issues)
-- **Free way to support:** Order cards through the **"🛒 Buy on TCGplayer"** button; we receive a small affiliate commission at no extra cost to you.
+- **Free way to support:** Order cards through the **"⚡ Buy on Mana Pool"** button; we receive a **5% affiliate commission** at zero extra cost to you.
 
 ---
 

@@ -10,12 +10,12 @@ import CardSwapModal from './components/CardSwapModal';
 import CardTooltip from './components/CardTooltip';
 import { 
   exportToMoxfield, 
-  exportToTcgplayer,
+  exportToManaPool,
   exportToArchidekt, 
   exportToMtgo, 
   exportToText, 
   exportToCsv,
-  getTcgplayerMassEntryUrl
+  getManaPoolMassEntryUrl
 } from './utils/deckExport';
 
 const getApiBaseUrl = () => {
@@ -114,7 +114,7 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
   const [exportModalFormat, setExportModalFormat] = useState('moxfield');
   const [copiedMoxfield, setCopiedMoxfield] = useState(false);
   const [copiedArchidekt, setCopiedArchidekt] = useState(false);
-  const [buyingTcgplayer, setBuyingTcgplayer] = useState(false);
+  const [buyingManaPool, setBuyingManaPool] = useState(false);
 
   // Card Swap State
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false);
@@ -318,15 +318,15 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     setTimeout(() => setCopiedArchidekt(false), 2400);
   };
 
-  const handleBuyTcgplayer = () => {
+  const handleBuyManaPool = () => {
     if (!deckResult) return;
-    const text = deckResult.exports?.tcgplayer || exportToTcgplayer(deckResult);
+    const text = deckResult.exports?.tcgplayer || exportToManaPool(deckResult);
     if (!text) return;
     navigator.clipboard.writeText(text);
-    setBuyingTcgplayer(true);
-    const url = getTcgplayerMassEntryUrl(deckResult);
-    window.open(url, '_blank');
-    setTimeout(() => setBuyingTcgplayer(false), 3000);
+    setBuyingManaPool(true);
+    const url = getManaPoolMassEntryUrl(deckResult);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    setTimeout(() => setBuyingManaPool(false), 3000);
   };
 
   const handleSendToAnalyzer = () => {
@@ -967,9 +967,9 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
 
               {/* Export Action Bar */}
               <div className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '8px' }}>
-                {/* Prominent TCGplayer Affiliate Commerce Button */}
+                {/* Prominent Mana Pool Affiliate Commerce Button */}
                 <button
-                  onClick={handleBuyTcgplayer}
+                  onClick={handleBuyManaPool}
                   className="btn"
                   style={{
                     width: '100%',
@@ -982,28 +982,28 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                     gap: '6px',
                     cursor: 'pointer',
                     borderRadius: '8px',
-                    border: buyingTcgplayer ? '1px solid #22c55e' : '1px solid #f59e0b',
-                    background: buyingTcgplayer 
+                    border: buyingManaPool ? '1px solid #22c55e' : '1px solid #38bdf8',
+                    background: buyingManaPool 
                       ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(21, 128, 61, 0.35))'
-                      : 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(234, 179, 8, 0.35))',
-                    color: buyingTcgplayer ? '#4ade80' : '#fbbf24',
-                    boxShadow: buyingTcgplayer
+                      : 'linear-gradient(135deg, rgba(56, 189, 248, 0.22), rgba(14, 165, 233, 0.32))',
+                    color: buyingManaPool ? '#4ade80' : '#38bdf8',
+                    boxShadow: buyingManaPool
                       ? '0 0 14px rgba(34, 197, 94, 0.4)'
-                      : '0 0 14px rgba(245, 158, 11, 0.25)',
+                      : '0 0 14px rgba(56, 189, 248, 0.25)',
                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    transform: buyingTcgplayer ? 'scale(1.01)' : 'scale(1)'
+                    transform: buyingManaPool ? 'scale(1.01)' : 'scale(1)'
                   }}
-                  title="Copy 100-card decklist and open TCGplayer Mass Entry"
+                  title="Copy 100-card decklist and open Mana Pool Mass Entry (5% affiliate support)"
                 >
-                  {buyingTcgplayer ? (
+                  {buyingManaPool ? (
                     <>
                       <Check size={14} style={{ color: '#4ade80' }} />
-                      <span>Deck copied! Opening TCGplayer...</span>
+                      <span>Deck copied! Opening Mana Pool...</span>
                     </>
                   ) : (
                     <>
                       <ShoppingCart size={14} />
-                      <span>🛒 Buy on TCGplayer</span>
+                      <span>⚡ Buy on Mana Pool (5% Supports Us)</span>
                     </>
                   )}
                 </button>

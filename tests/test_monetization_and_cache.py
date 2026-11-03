@@ -87,3 +87,35 @@ def test_tcgplayer_export_exact_100_cards():
         total_count += count
 
     assert total_count == 100, f"Expected exactly 100 cards in TCGplayer export, found {total_count}"
+
+
+def test_manapool_export_exact_100_cards():
+    """Verify that Mana Pool mass entry export generates exact 100 cards with clean format."""
+    conn = db.get_connection()
+    deck = deck_builder.build_deck(
+        conn=conn,
+        commander_name="Belbe, Corrupted Observer",
+        bracket=3,
+        budget="moderate",
+        preferred_win_con="combat"
+    )
+    conn.close()
+
+    assert deck["total_cards"] == 100
+    assert "exports" in deck
+    assert "manapool" in deck["exports"]
+
+    pool = deck["exports"]["manapool"]
+    lines = [line.strip() for line in pool.splitlines() if line.strip()]
+    assert len(lines) > 0
+    assert "1 Belbe, Corrupted Observer" in lines
+
+    total_count = 0
+    for line in lines:
+        parts = line.split(" ", 1)
+        assert len(parts) == 2, f"Invalid Mana Pool format line: {line}"
+        count = int(parts[0])
+        assert count >= 1
+        total_count += count
+
+    assert total_count == 100, f"Expected exactly 100 cards in Mana Pool export, found {total_count}"

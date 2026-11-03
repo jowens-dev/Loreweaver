@@ -120,10 +120,27 @@ export function exportToTcgplayer(deck) {
 }
 
 /**
+ * Mana Pool Format:
+ * Mana Pool Mass Entry accepts clean "1 Card Name" lines, free of bracket annotations.
+ */
+export function exportToManaPool(deck) {
+  return exportToTcgplayer(deck);
+}
+
+/**
+ * Returns the Mana Pool Mass Entry URL with affiliate referral attribution.
+ */
+export function getManaPoolMassEntryUrl(_deck) {
+  const ref = import.meta.env.VITE_MANAPOOL_REF || 'loreweaver';
+  return `https://manapool.com/mass-entry?ref=${encodeURIComponent(ref)}`;
+}
+
+/**
  * Returns the TCGplayer Mass Entry URL with affiliate attribution.
  */
 export function getTcgplayerMassEntryUrl(_deck) {
-  return 'https://www.tcgplayer.com/massentry?productline=Magic&utm_source=Loreweaver&utm_medium=affiliate&partner=Loreweaver';
+  const partner = import.meta.env.VITE_TCGPLAYER_PARTNER || 'Loreweaver';
+  return `https://www.tcgplayer.com/massentry?productline=Magic&utm_source=Loreweaver&utm_medium=affiliate&partner=${encodeURIComponent(partner)}`;
 }
 
 /**

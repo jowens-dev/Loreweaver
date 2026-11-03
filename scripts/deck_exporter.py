@@ -222,11 +222,25 @@ def export_to_csv(deck: dict[str, Any]) -> str:
     return output.getvalue()
 
 
+def export_to_manapool(deck: dict[str, Any]) -> str:
+    """Generate clean Mana Pool Mass Entry format decklist.
+    
+    Format:
+    1 Belbe, Corrupted Observer
+    1 Sol Ring
+    ...
+    Guaranteed exact 100 cards total, ready for paste into Mana Pool Mass Entry.
+    """
+    return export_to_tcgplayer(deck)
+
+
 def export_all_formats(deck: dict[str, Any]) -> dict[str, str]:
     """Generate all export formats for a deck dictionary."""
+    clean_entry = export_to_tcgplayer(deck)
     return {
+        "manapool": clean_entry,
         "moxfield": export_to_moxfield(deck),
-        "tcgplayer": export_to_tcgplayer(deck),
+        "tcgplayer": clean_entry,
         "archidekt": export_to_archidekt(deck),
         "mtgo": export_to_mtgo(deck),
         "text": export_to_text(deck),
@@ -237,7 +251,7 @@ def export_all_formats(deck: dict[str, Any]) -> dict[str, str]:
 def parse_export_card_count(text: str, format_type: str) -> int:
     """Parse an exported decklist text and calculate the exact total cards count.
     
-    Supports: 'moxfield', 'archidekt', 'mtgo', 'text', 'csv'
+    Supports: 'manapool', 'tcgplayer', 'moxfield', 'archidekt', 'mtgo', 'text', 'csv'
     """
     total = 0
     fmt = format_type.lower()

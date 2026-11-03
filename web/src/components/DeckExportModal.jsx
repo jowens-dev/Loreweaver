@@ -5,6 +5,7 @@ import {
 import {
   exportToMoxfield,
   exportToTcgplayer,
+  exportToManaPool,
   exportToArchidekt,
   exportToMtgo,
   exportToText,
@@ -12,10 +13,20 @@ import {
   countExportCards,
   downloadDeckFile,
   getCommanders,
-  getTcgplayerMassEntryUrl
+  getTcgplayerMassEntryUrl,
+  getManaPoolMassEntryUrl
 } from '../utils/deckExport';
 
 const EXPORT_FORMATS = [
+  {
+    id: 'manapool',
+    name: 'Mana Pool',
+    ext: '.txt',
+    mime: 'text/plain;charset=utf-8',
+    icon: ShoppingCart,
+    badge: '5% Affiliate',
+    desc: 'The independent, player-friendly card marketplace. Paste directly into Mana Pool Mass Entry with Cart Optimizer.'
+  },
   {
     id: 'moxfield',
     name: 'Moxfield',
@@ -103,6 +114,8 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
   const exportText = useMemo(() => {
     if (!deck) return '';
     switch (activeFormat) {
+      case 'manapool':
+        return deck.exports?.tcgplayer || exportToManaPool(deck);
       case 'moxfield':
         return deck.exports?.moxfield || exportToMoxfield(deck);
       case 'tcgplayer':
@@ -116,7 +129,7 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
       case 'csv':
         return deck.exports?.csv || exportToCsv(deck);
       default:
-        return exportToMoxfield(deck);
+        return exportToManaPool(deck);
     }
   }, [deck, activeFormat]);
 
@@ -333,7 +346,32 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
               {currentFormatMeta.desc}
             </div>
 
-            {/* Quick Links for Moxfield / Archidekt / TCGplayer */}
+            {/* Quick Links for Mana Pool / Moxfield / Archidekt / TCGplayer */}
+            {activeFormat === 'manapool' && (
+              <a
+                href={getManaPoolMassEntryUrl(deck)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#38bdf8',
+                  fontSize: '0.78rem',
+                  textDecoration: 'none',
+                  fontWeight: '600',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)'
+                }}
+              >
+                <ShoppingCart size={13} />
+                <span>Open in Mana Pool Mass Entry</span>
+                <ExternalLink size={12} />
+              </a>
+            )}
+
             {activeFormat === 'moxfield' && (
               <a
                 href="https://www.moxfield.com/decks/personal"
@@ -407,6 +445,27 @@ export default function DeckExportModal({ isOpen, onClose, deck, initialFormat =
               </a>
             )}
           </div>
+
+          {/* Mana Pool Affiliate Explanatory Note */}
+          {activeFormat === 'manapool' && (
+            <div style={{
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(14, 165, 233, 0.08))',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              fontSize: '0.8rem',
+              color: '#bae6fd',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+              lineHeight: '1.45'
+            }}>
+              <span style={{ fontSize: '1.1rem', lineHeight: '1' }}>⚡</span>
+              <div>
+                <strong>Support Loreweaver with Mana Pool!</strong> Copy this list and open Mana Pool Mass Entry to use their Cart Optimizer and independent seller marketplace. <strong>Loreweaver earns a 5% affiliate commission</strong> at zero extra cost to you.
+              </div>
+            </div>
+          )}
 
           {/* TCGplayer Affiliate Explanatory Note */}
           {activeFormat === 'tcgplayer' && (

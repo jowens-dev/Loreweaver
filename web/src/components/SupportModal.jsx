@@ -200,10 +200,10 @@ export default function SupportModal({ isOpen, onClose }) {
             </a>
           </div>
 
-          {/* Friendly note about TCGplayer affiliate support */}
+          {/* Friendly note about Mana Pool affiliate support */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(56, 189, 248, 0.1))',
-            border: '1px solid rgba(168, 85, 247, 0.3)',
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(14, 165, 233, 0.1))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
             borderRadius: '10px',
             padding: '12px 14px',
             fontSize: '0.82rem',
@@ -213,9 +213,9 @@ export default function SupportModal({ isOpen, onClose }) {
             gap: '10px',
             lineHeight: '1.45'
           }}>
-            <ShoppingCart size={18} style={{ color: '#fbbf24', flexShrink: 0, marginTop: '2px' }} />
+            <ShoppingCart size={18} style={{ color: '#38bdf8', flexShrink: 0, marginTop: '2px' }} />
             <div>
-              <strong style={{ color: '#ffffff' }}>Free Way to Support:</strong> You can also support us for free by using the &apos;Buy on TCGplayer&apos; button when ordering cards! We receive a small affiliate commission at no extra cost to you.
+              <strong style={{ color: '#ffffff' }}>Free Way to Support:</strong> You can also support us for free by using the &apos;Buy on Mana Pool&apos; button when ordering cards! We receive a 5% affiliate commission at no extra cost to you.
             </div>
           </div>
         </div>
