@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Coffee, Star, MessageSquare, ExternalLink, X, Heart, ShoppingCart } from 'lucide-react';
+import { Coffee, Star, Mail, ExternalLink, X, Heart, ShoppingCart } from 'lucide-react';
 
 export default function SupportModal({ isOpen, onClose }) {
   const kofiUrl = import.meta.env.VITE_KOFI_URL || 'https://ko-fi.com/loreweaver_mtg';
@@ -174,11 +174,9 @@ export default function SupportModal({ isOpen, onClose }) {
               <ExternalLink size={16} />
             </a>
 
-            {/* Discord Community & Feedback */}
+            {/* Contact & Feedback Email */}
             <a
-              href="https://discord.gg/loreweaver"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:contact@lore-weaver.app"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -195,8 +193,8 @@ export default function SupportModal({ isOpen, onClose }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <MessageSquare size={20} color="#38bdf8" />
-                <span>💬 Feedback & Discord Community</span>
+                <Mail size={20} color="#38bdf8" />
+                <span>✉️ Contact & Feedback (contact@lore-weaver.app)</span>
               </div>
               <ExternalLink size={16} />
             </a>

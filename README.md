@@ -288,3 +288,15 @@ All documentation, APIs, and code additions in this repository follow the [Googl
 - Maintain sentence case for all section headers.
 - Format all code symbols, endpoints, file paths, and parameter names in code font.
 - Prioritize testability and verify memory bounds (<100 MB RAM) for all backend algorithms.
+
+---
+
+## Contact & community
+
+For inquiries, feature requests, or partnerships:
+
+- **General contact:** [`contact@lore-weaver.app`](mailto:contact@lore-weaver.app)
+- **Community & greetings:** [`hello@lore-weaver.app`](mailto:hello@lore-weaver.app)
+- **Bug reports & issues:** [GitHub Issues](https://github.com/jowens-dev/Loreweaver/issues)
+- **Support the project:** [Ko-fi](https://ko-fi.com/loreweaver_mtg)
+

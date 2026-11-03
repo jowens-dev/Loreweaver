@@ -1169,6 +1169,13 @@ function App() {
           </button>
           {' • '}
           <a
+            href="mailto:contact@lore-weaver.app"
+            style={{ color: 'var(--text-accent)', textDecoration: 'underline' }}
+          >
+            Contact
+          </a>
+          {' • '}
+          <a
             href="https://github.com/jowens-dev/Loreweaver"
             target="_blank"
             rel="noopener noreferrer"
