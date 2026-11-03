@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Coffee, Star, MessageSquare, ExternalLink, X, Heart, ShoppingCart } from 'lucide-react';
 
 export default function SupportModal({ isOpen, onClose }) {
+  const kofiUrl = import.meta.env.VITE_KOFI_URL || 'https://ko-fi.com/loreweaver_mtg';
   // Handle escape key to close modal
   useEffect(() => {
     if (!isOpen) return;
@@ -120,7 +121,7 @@ export default function SupportModal({ isOpen, onClose }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {/* Ko-fi / Buy Me a Coffee */}
             <a
-              href="https://ko-fi.com/loreweaver"
+              href={kofiUrl}
               target="_blank"
               rel="noopener noreferrer"
               style={{
