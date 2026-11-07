@@ -65,7 +65,7 @@
 - **MTGO `.dec` download:** Native Magic Online deck file with separate `// Commander` and `// Mainboard` blocks.
 - **Plain text `.txt` download:** Categorized, human-readable decklist.
 - **Spreadsheet `.csv` export:** Structured tabular export (`Count,Name,Category,CMC,Type`) with RFC 4180 CSV escaping.
-- **⚡ Buy on Mana Pool (5% affiliate):** 1-click cart transfer that copies the mass entry list and opens Mana Pool Mass Entry with Cart Optimizer and affiliate attribution (`ref=loreweaver`).
+- **⚡ Buy on Mana Pool (5% affiliate):** 1-click cart transfer that copies the mass entry list and opens Mana Pool Mass Entry (`/add-deck`) with Cart Optimizer and affiliate attribution (`ref=loreweaver`).
 - **🛒 Buy on TCGplayer:** Mass entry list export for ordering via TCGplayer Mass Entry.
 
 ### 6. Dynamic hover visuals & card tooltips

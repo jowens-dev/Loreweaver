@@ -132,7 +132,7 @@ export function exportToManaPool(deck) {
  */
 export function getManaPoolMassEntryUrl(_deck) {
   const ref = import.meta.env.VITE_MANAPOOL_REF || 'loreweaver';
-  return `https://manapool.com/mass-entry?ref=${encodeURIComponent(ref)}`;
+  return `https://manapool.com/add-deck?ref=${encodeURIComponent(ref)}`;
 }
 
 /**
