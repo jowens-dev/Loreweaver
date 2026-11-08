@@ -1,0 +1,17 @@
+{
+  "appId": "app.loreweaver.mobile",
+  "appName": "Loreweaver",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#0f0721",
+      "showSpinner": false
+    }
+  }
+}

@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { 
   Sparkles,
   Copy, Download, ExternalLink, RefreshCw, Check, AlertCircle, Layers, ArrowRightLeft,
-  Shield, ChevronDown, ChevronUp, X, Plus, ShoppingCart
+  Shield, ChevronDown, ChevronUp, X, Plus, ShoppingCart, Share2
 } from 'lucide-react';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import DeckExportModal from './components/DeckExportModal';
@@ -17,6 +17,7 @@ import {
   exportToCsv,
   getManaPoolMassEntryUrl
 } from './utils/deckExport';
+import { safeCopyToClipboard } from './utils/clipboard';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -92,7 +93,7 @@ const SUGGESTIONS = [
   'Kozilek, the Broken Reality'
 ];
 
-export default function DeckArchitect({ onAnalyzeDeck }) {
+export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearInitialParams }) {
   // Form State
   const [commander, setCommander] = useState('');
   const [deckIdea, setDeckIdea] = useState('');
@@ -259,20 +260,38 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     setCustomBans((prev) => prev.filter((b) => b.toLowerCase() !== cardToRemove.toLowerCase()));
   };
 
-  const handleBuildDeck = async (e) => {
-    if (e) e.preventDefault();
+  const showToast = useCallback((msg) => {
+    setToastMessage(msg);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  }, []);
+
+  const executeBuild = useCallback(async (overrideParams = {}) => {
     setLoading(true);
     setError(null);
 
+    const cmdVal = (overrideParams.commander !== undefined ? overrideParams.commander : commander).trim();
+    if (!cmdVal) {
+      setLoading(false);
+      return;
+    }
+
+    const rawBracket = overrideParams.bracket !== undefined ? overrideParams.bracket : bracket;
+    const safeBracket = Math.min(5, Math.max(1, parseInt(rawBracket, 10) || 3));
+
     const payload = {
-      commander: commander.trim(),
-      deck_idea: deckIdea.trim(),
-      bracket: parseInt(bracket, 10),
-      budget: budget,
-      color_preference: selectedColors.filter((c) => c !== 'C').join(','),
-      preferred_win_con: winCon,
-      house_rules: houseRules,
-      custom_bans: customBans
+      commander: cmdVal,
+      deck_idea: (overrideParams.deck_idea !== undefined ? overrideParams.deck_idea : deckIdea).trim(),
+      bracket: safeBracket,
+      budget: overrideParams.budget !== undefined ? overrideParams.budget : budget,
+      color_preference: (overrideParams.selectedColors || selectedColors).filter((c) => c !== 'C').join(','),
+      preferred_win_con: overrideParams.win_con !== undefined ? overrideParams.win_con : winCon,
+      house_rules: overrideParams.house_rules || houseRules,
+      custom_bans: overrideParams.custom_bans || customBans
     };
 
     try {
@@ -286,7 +305,15 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.detail || `Server returned error status ${response.status}`);
+        let errMsg = `Server returned error status ${response.status}`;
+        if (errData?.detail) {
+          if (Array.isArray(errData.detail)) {
+            errMsg = errData.detail.map((d) => (d.msg ? `${d.loc ? d.loc.join('.') + ': ' : ''}${d.msg}` : JSON.stringify(d))).join(', ');
+          } else if (typeof errData.detail === 'string') {
+            errMsg = errData.detail;
+          }
+        }
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -298,34 +325,132 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     } finally {
       setLoading(false);
     }
+  }, [commander, deckIdea, bracket, budget, selectedColors, winCon, houseRules, customBans]);
+
+  const handleBuildDeck = (e) => {
+    if (e) e.preventDefault();
+    executeBuild();
   };
 
-  const handleFastCopyMoxfield = () => {
+  // Keep a stable ref to executeBuild so reactive state changes in the builder
+  // don't re-trigger URL parameter parsing or initialParams ingestion.
+  const executeBuildRef = useRef(executeBuild);
+  useEffect(() => {
+    executeBuildRef.current = executeBuild;
+  });
+
+  const hasProcessedInitialRef = useRef(false);
+
+  // URL Deep-linking and initialParams handling on mount only
+  useEffect(() => {
+    if (hasProcessedInitialRef.current) return;
+
+    let paramsToBuild = null;
+
+    if (initialParams && initialParams.commander) {
+      hasProcessedInitialRef.current = true;
+      setCommander(initialParams.commander);
+      if (initialParams.bracket) {
+        const safeB = Math.min(5, Math.max(1, parseInt(initialParams.bracket, 10) || 3));
+        setBracket(safeB);
+      }
+      if (initialParams.budget) setBudget(initialParams.budget);
+      if (initialParams.win_con) setWinCon(initialParams.win_con);
+      paramsToBuild = initialParams;
+      onClearInitialParams?.();
+    } else if (typeof window !== 'undefined' && window.location.search) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const cmd = searchParams.get('commander') || searchParams.get('c');
+      const b = searchParams.get('bracket') || searchParams.get('b');
+      const bg = searchParams.get('budget');
+      const wc = searchParams.get('win_con') || searchParams.get('w');
+      const auto = searchParams.get('auto') === 'true' || searchParams.get('build') === 'true';
+
+      if (cmd) {
+        hasProcessedInitialRef.current = true;
+        setCommander(cmd);
+        const p = { commander: cmd };
+        if (b) {
+          const safeB = Math.min(5, Math.max(1, parseInt(b, 10) || 3));
+          setBracket(safeB);
+          p.bracket = safeB;
+        }
+        if (bg) {
+          setBudget(bg);
+          p.budget = bg;
+        }
+        if (wc) {
+          setWinCon(wc);
+          p.win_con = wc;
+        }
+        if (auto) {
+          paramsToBuild = p;
+        }
+      }
+    }
+
+    if (paramsToBuild && paramsToBuild.commander) {
+      executeBuildRef.current(paramsToBuild);
+    }
+  }, [initialParams, onClearInitialParams]);
+
+  const handleCopyShareLink = async () => {
+    if (!commander) return;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://lore-weaver.app';
+    const params = new URLSearchParams();
+    params.set('c', commander);
+    params.set('b', String(bracket));
+    if (budget !== 'moderate') params.set('budget', budget);
+    if (winCon !== 'combat') params.set('w', winCon);
+    params.set('auto', 'true');
+    const shareUrl = `${origin}/?${params.toString()}`;
+
+    const ok = await safeCopyToClipboard(shareUrl);
+    if (ok) {
+      showToast('📋 Share link copied! Ready to paste into video description or bio.');
+    } else {
+      showToast('⚠️ Could not copy link automatically. Please copy the URL from your browser bar.');
+    }
+  };
+
+  const handleFastCopyMoxfield = async () => {
     if (!deckResult) return;
     const text = deckResult.exports?.moxfield || exportToMoxfield(deckResult);
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedMoxfield(true);
-    setTimeout(() => setCopiedMoxfield(false), 2400);
+    const ok = await safeCopyToClipboard(text);
+    if (ok) {
+      setCopiedMoxfield(true);
+      setTimeout(() => setCopiedMoxfield(false), 2400);
+      showToast('📋 Copied Moxfield list to clipboard!');
+    } else {
+      showToast('⚠️ Could not copy decklist automatically.');
+    }
   };
 
-  const handleFastCopyArchidekt = () => {
+  const handleFastCopyArchidekt = async () => {
     if (!deckResult) return;
     const text = deckResult.exports?.archidekt || exportToArchidekt(deckResult);
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedArchidekt(true);
-    setTimeout(() => setCopiedArchidekt(false), 2400);
+    const ok = await safeCopyToClipboard(text);
+    if (ok) {
+      setCopiedArchidekt(true);
+      setTimeout(() => setCopiedArchidekt(false), 2400);
+      showToast('📋 Copied Archidekt list to clipboard!');
+    } else {
+      showToast('⚠️ Could not copy decklist automatically.');
+    }
   };
 
-  const handleBuyManaPool = () => {
+  const handleBuyManaPool = async () => {
     if (!deckResult) return;
     const text = deckResult.exports?.tcgplayer || exportToManaPool(deckResult);
-    if (!text) return;
-    navigator.clipboard.writeText(text);
+    if (text) {
+      await safeCopyToClipboard(text);
+    }
     setBuyingManaPool(true);
     const url = getManaPoolMassEntryUrl(deckResult);
     window.open(url, '_blank', 'noopener,noreferrer');
+    showToast('⚡ Deck copied to clipboard! Opening Mana Pool...');
     setTimeout(() => setBuyingManaPool(false), 3000);
   };
 
@@ -406,6 +531,8 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
     ? sections
     : sections.filter((s) => s.id.toLowerCase() === selectedCategory.toLowerCase());
 
+  const currentBracketDef = BRACKET_DEFINITIONS[(bracket >= 1 && bracket <= 5 ? bracket : 3) - 1] || BRACKET_DEFINITIONS[2];
+
   return (
     <div className="tab-panel" style={{ maxWidth: '1440px', margin: '0 auto', paddingBottom: '80px' }}>
       {/* Studio Header */}
@@ -480,11 +607,11 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Commander Bracket (Tier {bracket})</span>
                 <span style={{ 
-                  color: BRACKET_DEFINITIONS[bracket - 1].color, 
+                  color: currentBracketDef.color, 
                   fontWeight: 'bold', 
                   fontSize: '0.8rem' 
                 }}>
-                  {BRACKET_DEFINITIONS[bracket - 1].badge}
+                  {currentBracketDef.badge}
                 </span>
               </label>
 
@@ -516,13 +643,13 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                 background: 'var(--bg-primary)', 
                 padding: '8px 10px', 
                 borderRadius: '6px', 
-                borderLeft: `3px solid ${BRACKET_DEFINITIONS[bracket - 1].color}`,
+                borderLeft: `3px solid ${currentBracketDef.color}`,
                 lineHeight: '1.4'
               }}>
-                <div style={{ fontWeight: 'bold', color: BRACKET_DEFINITIONS[bracket - 1].color, marginBottom: '2px' }}>
-                  {BRACKET_DEFINITIONS[bracket - 1].name}
+                <div style={{ fontWeight: 'bold', color: currentBracketDef.color, marginBottom: '2px' }}>
+                  {currentBracketDef.name}
                 </div>
-                {BRACKET_DEFINITIONS[bracket - 1].desc}
+                {currentBracketDef.desc}
               </div>
             </div>
 
@@ -1055,6 +1182,29 @@ export default function DeckArchitect({ onAnalyzeDeck }) {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleCopyShareLink}
+                    className="btn btn-secondary"
+                    style={{
+                      flex: 1,
+                      padding: '7px 8px',
+                      fontSize: '0.78rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      background: 'rgba(56, 189, 248, 0.12)',
+                      color: '#38bdf8',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Copy 1-click shareable URL for video descriptions and bio links"
+                  >
+                    <Share2 size={13} />
+                    <span>🔗 Share Link</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       setExportModalFormat('moxfield');

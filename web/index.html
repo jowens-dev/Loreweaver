@@ -10,22 +10,39 @@
     <meta name="title" content="Loreweaver | Objective MTG Deck Analyzer" />
     <meta name="description" content="Stop guessing. Analyze your Commander deck's math, engine fragility, and bracket compliance with objective heuristics." />
 
+    <!-- PWA & Mobile Web App Meta -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1c0f35" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Loreweaver" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://loreweaver.vercel.app/" />
-    <meta property="og:title" content="Loreweaver — Commander Matchmaking Companion" />
-    <meta property="og:description" content="Optimize your Commander deck consistency, flavor, and bracket compatibility." />
+    <meta property="og:url" content="https://lore-weaver.app/" />
+    <meta property="og:title" content="Loreweaver — Commander Matchmaking Companion & Deck Architect" />
+    <meta property="og:description" content="Optimize your Commander deck consistency, flavor, and bracket compatibility. 100-card synthesis and Mana Pool cart optimizer." />
     <meta property="og:image" content="/logo.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://loreweaver.vercel.app/" />
-    <meta property="twitter:title" content="Loreweaver — Commander Matchmaking Companion" />
+    <meta property="twitter:url" content="https://lore-weaver.app/" />
+    <meta property="twitter:title" content="Loreweaver — Commander Matchmaking Companion & Deck Architect" />
     <meta property="twitter:description" content="Optimize your Commander deck consistency, flavor, and bracket compatibility." />
     <meta property="twitter:image" content="/logo.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.warn('SW registration skipped:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

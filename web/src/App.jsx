@@ -4,6 +4,7 @@ import { parseDecklistText, calculateCohesionScore, calculateFlavorProfile, anal
 import { analyzeStress } from './utils/stressTester';
 import { detectBrokenChains, fetchSpiceRecommendations } from './utils/spiceInjector';
 import DeckArchitect from './DeckArchitect';
+import CreatorLinkHub from './components/CreatorLinkHub';
 import CommanderAutocomplete from './components/CommanderAutocomplete';
 import CardTooltip from './components/CardTooltip';
 import SupportModal from './components/SupportModal';
@@ -114,8 +115,18 @@ const mapRecommendationResponse = (payload) => {
     );
 };
 
+const getInitialTab = () => {
+  if (typeof window === 'undefined') return 'builder';
+  const path = window.location.pathname.toLowerCase();
+  if (path === '/links' || path === '/bio' || path === '/decks') return 'links';
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('tab') === 'links') return 'links';
+  return 'builder';
+};
+
 function App() {
-  const [activeTab, setActiveTab] = useState('builder');
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+  const [architectParams, setArchitectParams] = useState(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [commander, setCommander] = useState('Kozilek, the Great Distortion');
   const [bracket, setBracket] = useState(2);
@@ -394,34 +405,69 @@ function App() {
   return (
     <div className="app-container">
       {/* Header */}
-      <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <header className="app-header" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+        padding: '12px 16px',
+        flexWrap: 'wrap',
+        gap: '8px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <img src="/logo.png" alt="Loreweaver Logo" className="logo-img" />
-          <h1 className="app-title" style={{ margin: 0 }}>Loreweaver</h1>
+          <h1 className="app-title" style={{ margin: 0, fontSize: '1.25rem' }}>Loreweaver</h1>
         </div>
-        <button
-          onClick={() => setIsSupportModalOpen(true)}
-          className="btn"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '7px 14px',
-            borderRadius: '20px',
-            fontSize: '0.84rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 179, 8, 0.3))',
-            border: '1px solid #f59e0b',
-            color: '#fef08a',
-            transition: 'all 0.15s ease',
-            boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
-          }}
-          title="Support Loreweaver development"
-        >
-          <span>☕</span>
-          <span>Support</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveTab('links')}
+            className="btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '20px',
+              fontSize: '0.84rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              background: activeTab === 'links'
+                ? 'linear-gradient(135deg, rgba(147, 51, 234, 0.45), rgba(56, 189, 248, 0.35))'
+                : 'rgba(28, 15, 53, 0.85)',
+              border: activeTab === 'links' ? '1px solid #c084fc' : '1px solid rgba(59, 38, 104, 0.8)',
+              color: activeTab === 'links' ? '#ffffff' : 'var(--text-accent)',
+              transition: 'all 0.15s ease',
+              boxShadow: activeTab === 'links' ? '0 0 12px rgba(192, 132, 252, 0.35)' : 'none'
+            }}
+            title="Video Decks & Link Hub"
+          >
+            <span>🎬</span>
+            <span>Video Decks</span>
+          </button>
+
+          <button
+            onClick={() => setIsSupportModalOpen(true)}
+            className="btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: '20px',
+              fontSize: '0.84rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(234, 179, 8, 0.3))',
+              border: '1px solid #f59e0b',
+              color: '#fef08a',
+              transition: 'all 0.15s ease',
+              boxShadow: '0 0 12px rgba(245, 158, 11, 0.25)'
+            }}
+            title="Support Loreweaver development"
+          >
+            <span>☕</span>
+            <span>Support</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Tab Switcher */}
@@ -1100,9 +1146,24 @@ function App() {
             )}
           </div>
         )}
+        {activeTab === 'links' && (
+          <div className="tab-panel" style={{ padding: 0 }}>
+            <CreatorLinkHub
+              onOpenDeck={(params) => {
+                setArchitectParams(params);
+                setActiveTab('builder');
+              }}
+              onGoToBuilder={() => setActiveTab('builder')}
+            />
+          </div>
+        )}
         {activeTab === 'builder' && (
           <div className="tab-panel" style={{ padding: 0 }}>
-            <DeckArchitect onAnalyzeDeck={handleLoadArchitectDeck} />
+            <DeckArchitect 
+              initialParams={architectParams}
+              onClearInitialParams={() => setArchitectParams(null)}
+              onAnalyzeDeck={handleLoadArchitectDeck} 
+            />
           </div>
         )}
       </main>

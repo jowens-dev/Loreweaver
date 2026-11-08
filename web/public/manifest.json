@@ -1,0 +1,40 @@
+{
+  "name": "Loreweaver: MTG Commander Architect",
+  "short_name": "Loreweaver",
+  "description": "Algorithmic 100-Card Magic: The Gathering Commander Deck Architect & Strategic Analytics Engine",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f0721",
+  "theme_color": "#1c0f35",
+  "categories": ["games", "entertainment", "utilities"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Weave 100-Card Deck",
+      "short_name": "Build Deck",
+      "url": "/?tab=builder",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Video Decks & Links",
+      "short_name": "Video Decks",
+      "url": "/links",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}
