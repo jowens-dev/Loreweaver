@@ -118,7 +118,7 @@ const mapRecommendationResponse = (payload) => {
 const getInitialTab = () => {
   if (typeof window === 'undefined') return 'builder';
   const path = window.location.pathname.toLowerCase();
-  if (path === '/links' || path === '/bio' || path === '/decks') return 'links';
+  if (path === '/links' || path === '/link' || path === '/bio' || path === '/decks' || path.startsWith('/links') || path.startsWith('/link')) return 'links';
   const params = new URLSearchParams(window.location.search);
   if (params.get('tab') === 'links') return 'links';
   return 'builder';
