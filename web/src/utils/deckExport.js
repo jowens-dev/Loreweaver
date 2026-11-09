@@ -128,11 +128,52 @@ export function exportToManaPool(deck) {
 }
 
 /**
- * Returns the Mana Pool Mass Entry URL with affiliate referral attribution.
+ * Browser-safe Base64URL encoder (RFC 4648 §5, URL-safe without padding).
+ * Compatible with Mana Pool's js-base64 decoder on /add-deck?deck=<base64url>.
  */
-export function getManaPoolMassEntryUrl(_deck) {
+export function encodeBase64Url(str) {
+  if (!str) return '';
+  if (typeof TextEncoder !== 'undefined' && typeof btoa === 'function') {
+    const bytes = new TextEncoder().encode(str);
+    let binary = '';
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  return '';
+}
+
+/**
+ * Returns the Mana Pool Mass Entry URL with affiliate referral attribution
+ * and pre-loads the decklist directly into the Mass Entry interface via ?deck=<base64url>.
+ */
+export function getManaPoolMassEntryUrl(deckOrText) {
   const ref = import.meta.env.VITE_MANAPOOL_REF || 'loreweaver';
-  return `https://manapool.com/add-deck?ref=${encodeURIComponent(ref)}`;
+  const baseUrl = `https://manapool.com/add-deck?ref=${encodeURIComponent(ref)}`;
+  if (!deckOrText) return baseUrl;
+
+  let deckText = '';
+  if (typeof deckOrText === 'string') {
+    deckText = deckOrText;
+  } else if (deckOrText?.exports?.manapool) {
+    deckText = deckOrText.exports.manapool;
+  } else if (deckOrText?.exports?.tcgplayer) {
+    deckText = deckOrText.exports.tcgplayer;
+  } else if (deckOrText?.manapoolExport) {
+    deckText = deckOrText.manapoolExport;
+  } else if (deckOrText) {
+    deckText = exportToManaPool(deckOrText);
+  }
+
+  if (!deckText) return baseUrl;
+
+  const encoded = encodeBase64Url(deckText.trim());
+  if (!encoded) return baseUrl;
+
+  return `${baseUrl}&deck=${encoded}`;
 }
 
 /**

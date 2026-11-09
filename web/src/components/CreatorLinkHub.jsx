@@ -39,9 +39,9 @@ export default function CreatorLinkHub({ onOpenDeck, onGoToBuilder }) {
       await safeCopyToClipboard(deckItem.manapoolExport);
     }
 
-    const url = getManaPoolMassEntryUrl();
+    const url = getManaPoolMassEntryUrl(deckItem.manapoolExport);
     window.open(url, '_blank', 'noopener,noreferrer');
-    showToast(`📋 100-card decklist copied! Opening Mana Pool for ${deckItem.commander}...`);
+    showToast(`⚡ Loading 100 cards directly into Mana Pool for ${deckItem.commander}...`);
     setTimeout(() => setCopiedId(null), 2500);
   };
 

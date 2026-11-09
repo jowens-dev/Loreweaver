@@ -450,7 +450,7 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
     setBuyingManaPool(true);
     const url = getManaPoolMassEntryUrl(deckResult);
     window.open(url, '_blank', 'noopener,noreferrer');
-    showToast('⚡ Deck copied to clipboard! Opening Mana Pool...');
+    showToast('⚡ Loading 100 cards directly into Mana Pool...');
     setTimeout(() => setBuyingManaPool(false), 3000);
   };
 

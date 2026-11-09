@@ -134,3 +134,22 @@ def test_api_build_bracket_validation_boundary():
     # Bracket out-of-bounds: bracket=0
     res_low = client.post("/api/build", json={"commander": "Belbe, Corrupted Observer", "bracket": 0})
     assert res_low.status_code == 422
+
+
+def test_manapool_mass_entry_url_preloads_deck():
+    """Verify get_manapool_mass_entry_url generates a base64url encoded deck param that round-trips exactly."""
+    import base64
+    deck_text = "1 Belbe, Corrupted Observer\n1 Sol Ring\n1 Arcane Signet"
+    url = deck_exporter.get_manapool_mass_entry_url(deck_text, ref="loreweaver")
+
+    assert "https://manapool.com/add-deck?ref=loreweaver&deck=" in url
+    encoded_part = url.split("&deck=")[1]
+    # Check URL-safe characters: no '+', '/', or '='
+    assert "+" not in encoded_part
+    assert "/" not in encoded_part
+    assert "=" not in encoded_part
+
+    # Decode base64url
+    padded = encoded_part + "=" * ((4 - len(encoded_part) % 4) % 4)
+    decoded = base64.urlsafe_b64decode(padded).decode("utf-8")
+    assert decoded == deck_text

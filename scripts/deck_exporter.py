@@ -234,6 +234,23 @@ def export_to_manapool(deck: dict[str, Any]) -> str:
     return export_to_tcgplayer(deck)
 
 
+def get_manapool_mass_entry_url(deck_or_text: Any, ref: str = "loreweaver") -> str:
+    """Generate Mana Pool Mass Entry URL with base64url encoded deck preloaded."""
+    import base64
+    base_url = f"https://manapool.com/add-deck?ref={ref}"
+    text = ""
+    if isinstance(deck_or_text, str):
+        text = deck_or_text
+    elif isinstance(deck_or_text, dict):
+        text = deck_or_text.get("exports", {}).get("manapool") or export_to_manapool(deck_or_text)
+
+    if not text:
+        return base_url
+
+    b64 = base64.urlsafe_b64encode(text.strip().encode("utf-8")).decode("utf-8").rstrip("=")
+    return f"{base_url}&deck={b64}"
+
+
 def export_all_formats(deck: dict[str, Any]) -> dict[str, str]:
     """Generate all export formats for a deck dictionary."""
     clean_entry = export_to_tcgplayer(deck)
