@@ -20,13 +20,23 @@ try:
     from scripts.hybrid_engine import detect_resource_profile
     from scripts.math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
     from scripts import deck_exporter
-    from scripts.card_swapper import get_swap_candidates
+    from scripts.pricing_engine import (
+        calculate_composite_score,
+        get_bulk_prices,
+        get_card_price,
+        DEFAULT_SENTINEL_PRICE
+    )
 except ImportError:
     import db
     from hybrid_engine import detect_resource_profile
     from math_utils import hypergeometric_cdf_ge, calculate_joint_consistency
     import deck_exporter
-    from card_swapper import get_swap_candidates
+    from pricing_engine import (
+        calculate_composite_score,
+        get_bulk_prices,
+        get_card_price,
+        DEFAULT_SENTINEL_PRICE
+    )
 
 # --- COLOR & ALIAS DICTIONARIES ---
 COLOR_MAP: dict[str, set[str]] = {
@@ -1749,7 +1759,10 @@ def build_deck(
                     continue
                 add_card(card, "win_con")
 
-    # 6. Fill Role Quotas from Filtered Pool
+    # 6. Fill Role Quotas from Filtered Pool with Logarithmic Price Friction
+    candidate_names = [c["name"] for c in filtered_pool]
+    prices_map = get_bulk_prices(conn, candidate_names)
+
     scored_candidates = []
     for c in filtered_pool:
         if c["name"].lower() in deck_cards:
@@ -1757,8 +1770,15 @@ def build_deck(
         roles = classify_card_role(c)
         if "land" in roles:
             continue
-        score = score_synergy(c, primary_commander, prompt_tokens, preferred_win_con, bracket, intents=intents)
-        scored_candidates.append((score, c, roles))
+        raw_score = score_synergy(c, primary_commander, prompt_tokens, preferred_win_con, bracket, intents=intents)
+        c_price = prices_map.get(c["name"], DEFAULT_SENTINEL_PRICE)
+        if budget == "unlimited" or bracket >= 5:
+            final_score = raw_score
+        else:
+            # Stricter logarithmic drag for budget tiers, balanced curve for moderate
+            beta = 2.1 if budget in {"budget", "ultra_budget"} else 1.8
+            final_score = calculate_composite_score(raw_score, c_price, c.get("edhrec_rank"), beta=beta)
+        scored_candidates.append((final_score, c, roles))
 
     scored_candidates.sort(key=lambda x: x[0], reverse=True)
 

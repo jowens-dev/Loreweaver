@@ -1135,6 +1135,27 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
                   )}
                 </button>
 
+                <div style={{ textAlign: 'center' }}>
+                  <a
+                    href="https://manapool.com/?ref=loreweaver"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '0.72rem',
+                      color: '#38bdf8',
+                      textDecoration: 'none',
+                      opacity: 0.85
+                    }}
+                    title="Mana Pool MTG Marketplace"
+                  >
+                    <span>Prices brought to you by Mana Pool</span>
+                    <ExternalLink size={11} />
+                  </a>
+                </div>
+
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={handleFastCopyMoxfield}

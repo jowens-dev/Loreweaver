@@ -18,9 +18,23 @@ from typing import Any
 try:
     from scripts import db
     from scripts import deck_builder
+    from scripts.pricing_engine import (
+        get_card_price,
+        get_bulk_prices,
+        get_manapool_affiliate_url,
+        DEFAULT_SENTINEL_PRICE
+    )
+    from scripts.synergy_engine import evaluate_candidate_in_deck
 except ImportError:
     import db
     import deck_builder
+    from pricing_engine import (
+        get_card_price,
+        get_bulk_prices,
+        get_manapool_affiliate_url,
+        DEFAULT_SENTINEL_PRICE
+    )
+    from synergy_engine import evaluate_candidate_in_deck
 
 # Format-banned cards in Commander (WotC / Commander Rules Committee banlist)
 FORMAT_BANNED_CARDS: set[str] = {
@@ -508,82 +522,84 @@ def get_swap_candidates(
             if not is_draw:
                 continue
 
-        # Baseline EDHREC Popularity Score
-        score = max(0.0, (15000.0 - rank) / 500.0)
+        # Price & Intrinsic Mechanical Vector Synergy Scoring
+        card_price = get_card_price(conn, card["name"])
+        eval_res = evaluate_candidate_in_deck(
+            candidate_card=card,
+            commander_card=primary_commander,
+            deck_cards=[],
+            price=card_price,
+            beta=2.1
+        )
 
-        # Synergy with Commander
-        if primary_commander:
-            score += deck_builder.score_synergy(
-                card=card,
-                commander=primary_commander,
-                prompt_tokens=prompt_tokens,
-                win_con="combat",
-                bracket=bracket
-            )
+        composite_score = eval_res["composite_score"]
 
-        # Category / Role specific weighting
+        # Category / Role specific weighting to enforce operational lane fitness
         if category_norm == "lands":
-            score += 100.0
+            composite_score += 15.0
             # Prioritize duals, fetches, and high utility lands
             if len(card_colors) >= 2 or "dual" in oracle:
-                score += 35.0
+                composite_score += 8.0
             if rank < 500:
-                score += 25.0
+                composite_score += 3.0
             # Slight penalty for basic lands when swapping so user gets interesting options
             if nl in BASIC_LAND_NAMES:
-                score -= 40.0
+                composite_score -= 8.0
 
         elif category_norm == "ramp":
-            score += 120.0
             if cmc <= 2:
-                score += 25.0
+                composite_score += 12.0
             elif cmc > 4:
-                score -= 15.0
+                composite_score -= 6.0
 
-        elif category_norm == "draw":
-            score += 120.0
+        elif category_norm in {"draw", "removal"}:
             if cmc <= 3:
-                score += 20.0
-
-        elif category_norm == "removal":
-            score += 120.0
-            if cmc <= 3:
-                score += 20.0
+                composite_score += 10.0
 
         elif category_norm == "win_con":
-            is_finisher = cmc >= 5 or "overrun" in oracle or "trample" in oracle or "infinite" in oracle or "damage to each" in oracle
-            if is_finisher:
-                score += 120.0
+            if eval_res.get("has_closed_loop"):
+                composite_score += 25.0
+            elif cmc >= 5 or "overrun" in oracle or "trample" in oracle or "damage to each" in oracle:
+                composite_score += 12.0
             else:
-                score += 30.0
+                composite_score += 5.0
 
         elif category_norm == "synergy":
-            score += 80.0
+            if eval_res.get("has_closed_loop"):
+                composite_score += 20.0
 
         # Proximity to replaced card's CMC
         if replaced_card:
             old_cmc = float(replaced_card.get("cmc") or 0.0)
             cmc_diff = abs(cmc - old_cmc)
             if cmc_diff <= 1.0:
-                score += 15.0
+                composite_score += 2.0
             elif cmc_diff >= 4.0:
-                score -= 10.0
+                composite_score -= 2.0
 
-        scored.append((score, card))
+        scored.append((composite_score, card, eval_res))
 
     # Sort descending by calculated score
     scored.sort(key=lambda x: x[0], reverse=True)
 
     # 5. Format & Return Top Candidates
     results: list[dict[str, Any]] = []
-    for _, card in scored[:limit]:
-        reason = generate_swap_reason(
+    for comp_score, card, eval_res in scored[:limit]:
+        base_reason = generate_swap_reason(
             card=card,
             category=category_norm,
             commander=primary_commander,
             replaced_card=replaced_card,
             bracket=bracket
         )
+
+        notes = eval_res.get("interaction_notes", [])
+        if eval_res.get("has_closed_loop") and notes:
+            display_reason = f"⚡ {notes[0]}"
+        elif notes and any(marker in notes[0] for marker in ["Generates", "Fueled by", "triggers"]):
+            display_reason = f"🎯 {notes[0]}"
+        else:
+            display_reason = base_reason
 
         results.append({
             "name": card["name"],
@@ -592,7 +608,12 @@ def get_swap_candidates(
             "type_line": card.get("type_line") or "",
             "oracle_text": card.get("oracle_text") or "",
             "image_url": card.get("image_url") or "",
-            "reason": reason
+            "reason": display_reason,
+            "price": eval_res.get("price", DEFAULT_SENTINEL_PRICE),
+            "mana_pool_url": eval_res.get("mana_pool_url") or get_manapool_affiliate_url(card["name"]),
+            "interaction_notes": notes,
+            "composite_score": round(comp_score, 2),
+            "has_closed_loop": eval_res.get("has_closed_loop", False)
         })
 
     return results

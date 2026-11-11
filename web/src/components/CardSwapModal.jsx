@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  X, ArrowRightLeft, Dices, Search, Sparkles, RefreshCw, AlertCircle, Check
+  X, ArrowRightLeft, Dices, Search, Sparkles, RefreshCw, AlertCircle, Check, ExternalLink
 } from 'lucide-react';
 import CardTooltip from './CardTooltip';
+import { formatCardPrice, getManaPoolCardUrl } from '../utils/synergyEngine';
 
 const getApiBaseUrl = () => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -560,12 +561,46 @@ export default function CardSwapModal({
                               <span style={{ fontWeight: 'bold', fontSize: '0.82rem', lineHeight: '1.2', color: 'var(--text-white)' }}>
                                 {cand.name}
                               </span>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                {cand.mana_cost}
-                              </span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {cand.price !== undefined && formatCardPrice(cand.price) && (
+                                  <span
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      fontWeight: '600',
+                                      color: '#34d399',
+                                      background: 'rgba(52, 211, 153, 0.12)',
+                                      border: '1px solid rgba(52, 211, 153, 0.3)',
+                                      borderRadius: '4px',
+                                      padding: '1px 5px'
+                                    }}
+                                  >
+                                    {formatCardPrice(cand.price)}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                  {cand.mana_cost}
+                                </span>
+                              </div>
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                              {cand.type_line}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                {cand.type_line}
+                              </span>
+                              {cand.has_closed_loop && (
+                                <span
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    fontWeight: 'bold',
+                                    color: '#f59e0b',
+                                    background: 'rgba(245, 158, 11, 0.15)',
+                                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                                    borderRadius: '4px',
+                                    padding: '1px 4px'
+                                  }}
+                                >
+                                  ⚡ Loop
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -590,6 +625,31 @@ export default function CardSwapModal({
                           </div>
                         )}
                       </div>
+
+                      {/* Outbound Mana Pool Single-Card Affiliate Link */}
+                      <a
+                        href={cand.mana_pool_url || getManaPoolCardUrl(cand.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          fontSize: '0.68rem',
+                          color: '#38bdf8',
+                          textDecoration: 'none',
+                          padding: '2px 0',
+                          opacity: 0.85,
+                          transition: 'opacity 0.15s'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+                        title={`View ${cand.name} on Mana Pool`}
+                      >
+                        <span>Buy on Mana Pool</span>
+                        <ExternalLink size={10} />
+                      </a>
 
                       {/* Swap In CTA */}
                       <button
@@ -635,7 +695,7 @@ export default function CardSwapModal({
         {/* Modal Footer */}
         <div
           style={{
-            padding: '14px 24px',
+            padding: '12px 24px',
             borderTop: '1px solid var(--border-purple, #3b2668)',
             backgroundColor: 'var(--bg-input, #100522)',
             display: 'flex',
@@ -646,8 +706,25 @@ export default function CardSwapModal({
             color: 'var(--text-muted)'
           }}
         >
-          <div>
-            Swapping ensures zero non-basic duplicates and preserves tournament color legality.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span>Swapping preserves tournament color legality and singleton rules.</span>
+            <a
+              href="https://manapool.com/?ref=loreweaver"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                color: '#38bdf8',
+                textDecoration: 'none',
+                fontWeight: '500',
+                fontSize: '0.74rem'
+              }}
+            >
+              <span>Prices brought to you by Mana Pool</span>
+              <ExternalLink size={11} />
+            </a>
           </div>
           <button
             onClick={onClose}
