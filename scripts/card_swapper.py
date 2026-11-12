@@ -522,6 +522,21 @@ def get_swap_candidates(
             if not is_draw:
                 continue
 
+        elif category_norm == "win_con":
+            is_win_con = (
+                "win_con" in roles or
+                cmc >= 5 or
+                "overrun" in oracle or
+                "trample" in oracle or
+                "damage to each opponent" in oracle or
+                "each opponent loses" in oracle or
+                "win the game" in oracle or
+                "loses the game" in oracle or
+                nl in {"craterhoof behemoth", "moonshaker cavalry", "triumph of the hordes", "exsanguinate", "torment of hailfire", "aetherflux reservoir"}
+            )
+            if not is_win_con:
+                continue
+
         # Price & Intrinsic Mechanical Vector Synergy Scoring
         card_price = get_card_price(conn, card["name"])
         eval_res = evaluate_candidate_in_deck(

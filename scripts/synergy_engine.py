@@ -89,12 +89,17 @@ INPUT_PATTERNS: dict[str, list[str]] = {
     "card_draw": [
         r"whenever\s+you\s+draw\s+a\s+card",
         r"whenever\s+a\s+player\s+draws\s+a\s+card",
-        r"draw\s+your\s+second\s+card"
+        r"draw\s+your\s+second\s+card",
+        r"more\s+cards\s+in\s+hand",
+        r"cards\s+in\s+(your\s+)?hand",
+        r"hand\s+size"
     ],
     "card_discard": [
         r"whenever\s+you\s+discard\s+a\s+card",
         r"whenever\s+an\s+opponent\s+discards",
-        r"whenever\s+a\s+player\s+discards"
+        r"whenever\s+a\s+player\s+discards",
+        r"more\s+cards\s+in\s+hand",
+        r"fewer\s+cards\s+in\s+hand"
     ],
     "life_gain": [
         r"whenever\s+you\s+gain\s+life",
@@ -118,7 +123,9 @@ INPUT_PATTERNS: dict[str, list[str]] = {
     "graveyard_fill": [
         r"whenever\s+a\s+card\s+is\s+put\s+into\s+your\s+graveyard",
         r"cards?\s+in\s+your\s+graveyard",
-        r"undergrowth"
+        r"undergrowth",
+        r"return\s+.*\s+from\s+your\s+graveyard",
+        r"leaves?\s+(your\s+)?graveyard"
     ],
     "spells_cast": [
         r"whenever\s+you\s+cast\s+(an\s+instant|a\s+sorcery|a\s+noncreature)",
@@ -128,7 +135,9 @@ INPUT_PATTERNS: dict[str, list[str]] = {
     ],
     "land_etb": [
         r"landfall",
-        r"whenever\s+a\s+land\s+enters"
+        r"whenever\s+a\s+land\s+enters",
+        r"sacrifice\s+a\s+(swamp|land|forest|mountain|island|plains)",
+        r"whenever\s+a\s+land.*\s+is\s+put\s+into\s+a\s+graveyard"
     ],
     "mana_ramp": [
         r"whenever\s+you\s+tap\s+a\s+land\s+for\s+mana",
@@ -140,7 +149,8 @@ INPUT_PATTERNS: dict[str, list[str]] = {
 OUTPUT_PATTERNS: dict[str, list[str]] = {
     "creature_etb": [
         r"create\s+(a|two|three|\d+|x)?\s*(tapped\s+)?.*creature\s+token",
-        r"return\s+target\s+creature\s+card\s+from\s+your\s+graveyard\s+to\s+the\s+battlefield",
+        r"return\s+(target\s+)?creature\s+card\s+from\s+your\s+graveyard\s+to\s+the\s+battlefield",
+        r"return\s+.*\s+from\s+your\s+graveyard\s+to\s+the\s+battlefield",
         r"put\s+a\s+creature\s+card\s+from\s+your\s+hand\s+onto\s+the\s+battlefield"
     ],
     "artifact_etb": [
@@ -199,7 +209,8 @@ OUTPUT_PATTERNS: dict[str, list[str]] = {
     ],
     "land_etb": [
         r"you\s+may\s+play\s+an\s+additional\s+land",
-        r"search\s+your\s+library\s+for\s+a\s+(basic\s+)?land.*onto\s+the\s+battlefield"
+        r"search\s+your\s+library\s+for\s+a\s+(basic\s+)?land.*onto\s+the\s+battlefield",
+        r"sacrifice\s+a\s+(swamp|land)"
     ],
     "mana_ramp": [
         r"add\s+\{",
