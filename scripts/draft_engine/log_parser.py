@@ -10,6 +10,7 @@ Player.log streams and payloads, specifically tracking:
 
 from __future__ import annotations
 
+import glob
 import json
 import logging
 import os
@@ -109,17 +110,49 @@ class DraftState:
         }
 
 
+def get_default_arena_raw_db_path() -> Optional[Path]:
+    """Locate MTG Arena's official Raw_CardDatabase_*.mtga SQLite database if present."""
+    home = Path.home()
+    candidates: List[str] = []
+    if sys.platform == "darwin":
+        pattern = str(home / "Library/Application Support/com.wizards.mtga/Downloads/Raw/Raw_CardDatabase_*.mtga")
+        candidates = glob.glob(pattern)
+    elif sys.platform == "win32":
+        localappdata = os.environ.get("LOCALAPPDATA")
+        if localappdata:
+            pattern = os.path.join(localappdata, "Wizards Of The Coast", "MTGA", "Downloads", "Raw", "Raw_CardDatabase_*.mtga")
+            candidates = glob.glob(pattern)
+        else:
+            pattern = str(home / "AppData/LocalLow/Wizards Of The Coast/MTGA/Downloads/Raw/Raw_CardDatabase_*.mtga")
+            candidates = glob.glob(pattern)
+
+    if candidates:
+        candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+        return Path(candidates[0])
+    return None
+
+
 class CardResolver:
     """Resolves MTG Arena card IDs (grpId) to canonical card names and metadata
 
-    via SQLite data/cards.db with in-memory caching and mock fallback support.
+    via MTGA Raw_CardDatabase_*.mtga, SQLite data/cards.db, in-memory caching,
+    and mock fallback support.
     """
 
-    def __init__(self, db_path: Optional[Union[str, Path]] = None) -> None:
+    def __init__(
+        self,
+        db_path: Optional[Union[str, Path]] = None,
+        arena_db_path: Optional[Union[str, Path]] = None,
+    ) -> None:
         if db_path is None:
             self.db_path = DEFAULT_DB_PATH
         else:
             self.db_path = Path(db_path)
+
+        if arena_db_path is not None:
+            self.arena_db_path = Path(arena_db_path)
+        else:
+            self.arena_db_path = get_default_arena_raw_db_path()
 
         self._name_cache: Dict[int, str] = {}
         self._card_cache: Dict[int, Dict[str, Any]] = {}
@@ -221,6 +254,64 @@ class CardResolver:
                 logger.debug(f"Failed to connect to SQLite at {self.db_path}: {e}")
                 return None
 
+    def _resolve_from_arena_raw_db(self, gid: int) -> Optional[Dict[str, Any]]:
+        """Query card details from MTGA's Raw_CardDatabase_*.mtga if available."""
+        if not self.arena_db_path or not self.arena_db_path.exists():
+            return None
+        try:
+            conn = sqlite3.connect(f"file:{self.arena_db_path}?mode=ro", uri=True)
+            cursor = conn.cursor()
+            query = """
+                SELECT c.GrpId, loc.Loc, c.OldSchoolManaText, c.Rarity, c.Types, c.Colors, c.ExpansionCode
+                FROM Cards c
+                JOIN Localizations_enUS loc ON c.TitleId = loc.LocId
+                WHERE c.GrpId = ?
+                LIMIT 1
+            """
+            cursor.execute(query, (gid,))
+            row = cursor.fetchone()
+            conn.close()
+            if not row:
+                return None
+
+            gid_val, name, mana_raw, rarity_int, types_raw, colors_raw, set_code = row
+
+            tokens = [t for t in (mana_raw or "").split("o") if t]
+            cost_str = "".join(f"{{{t.strip('()')}}}" for t in tokens)
+            cmc = 0.0
+            for t in tokens:
+                clean = t.strip("()")
+                if clean.isdigit():
+                    cmc += float(clean)
+                elif "/" in clean or clean.upper() in "WUBRGC":
+                    cmc += 1.0
+
+            color_map = {"1": "W", "2": "U", "3": "B", "4": "R", "5": "G"}
+            colors = [color_map[c.strip()] for c in str(colors_raw).split(",") if c.strip() in color_map]
+
+            type_map = {1: "Artifact", 2: "Creature", 3: "Enchantment", 4: "Instant", 5: "Land", 8: "Planeswalker", 10: "Sorcery", 14: "Battle"}
+            type_line = " ".join(type_map[int(t.strip())] for t in str(types_raw).split(",") if t.strip().isdigit() and int(t.strip()) in type_map)
+
+            rarity_map = {1: "basic", 2: "common", 3: "uncommon", 4: "rare", 5: "mythic"}
+            rarity = rarity_map.get(rarity_int, "common")
+
+            card_dict = {
+                "grpId": gid_val,
+                "id": gid_val,
+                "name": name,
+                "mana_cost": cost_str,
+                "cmc": cmc,
+                "type_line": type_line,
+                "colors": colors,
+                "color_identity": colors,
+                "rarity": rarity,
+                "set_code": set_code or "",
+            }
+            return card_dict
+        except Exception as e:
+            logger.debug(f"Failed to query arena raw DB: {e}")
+            return None
+
     def resolve_name(self, grp_id: Union[int, str]) -> str:
         """Resolve a grpId to its canonical card name string."""
         try:
@@ -235,6 +326,12 @@ class CardResolver:
             name = self._memory_overrides[gid]["name"]
             self._name_cache[gid] = name
             return name
+
+        arena_card = self._resolve_from_arena_raw_db(gid)
+        if arena_card and "name" in arena_card:
+            self._card_cache[gid] = arena_card
+            self._name_cache[gid] = arena_card["name"]
+            return arena_card["name"]
 
         conn = self._get_connection()
         if conn is not None:
@@ -272,6 +369,12 @@ class CardResolver:
             res = dict(self._memory_overrides[gid])
             self._card_cache[gid] = res
             return res
+
+        arena_card = self._resolve_from_arena_raw_db(gid)
+        if arena_card:
+            self._card_cache[gid] = dict(arena_card)
+            self._name_cache[gid] = str(arena_card.get("name", f"Unknown Card ({gid})"))
+            return dict(arena_card)
 
         conn = self._get_connection()
         if conn is not None:
