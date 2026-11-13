@@ -260,3 +260,41 @@ def test_get_swap_candidates_returns_affiliate_and_notes():
         assert "interaction_notes" in cand
         assert "composite_score" in cand
         assert "has_closed_loop" in cand
+
+
+def test_mishra_possibility_storm_and_blood_funnel_synergy():
+    """Verify that Mishra detects strong synergy with Possibility Storm and Blood Funnel."""
+    mishra = {
+        "name": "Mishra, Artificer Prodigy",
+        "type_line": "Legendary Creature — Human Artificer",
+        "cmc": 4.0,
+        "oracle_text": "Whenever you cast an artifact spell, you may search your graveyard, hand, and/or library for a card with the same name as that spell and put it onto the battlefield. If you search your library this way, shuffle.",
+        "edhrec_rank": 22722
+    }
+    pstorm = {
+        "name": "Possibility Storm",
+        "type_line": "Enchantment",
+        "cmc": 5.0,
+        "oracle_text": "Whenever a player casts a spell from their hand, that player exiles it, then exiles cards from the top of their library until they exile a card that shares a card type with it. That player may cast that card without paying its mana cost. Then they put all cards exiled with this enchantment on the bottom of their library in a random order.",
+        "edhrec_rank": 4771
+    }
+    bfunnel = {
+        "name": "Blood Funnel",
+        "type_line": "Enchantment",
+        "cmc": 2.0,
+        "oracle_text": "Noncreature spells you cast cost {2} less to cast.\nWhenever you cast a noncreature spell, counter that spell unless you sacrifice a creature.",
+        "edhrec_rank": 15050
+    }
+
+    eval_pstorm = evaluate_candidate_in_deck(pstorm, mishra, price=1.54)
+    eval_bfunnel = evaluate_candidate_in_deck(bfunnel, mishra, price=0.35)
+
+    assert eval_pstorm["raw_synergy"] > 0.0
+    assert eval_pstorm["composite_score"] > 25.0
+    assert any("mishra" in n.lower() for n in eval_pstorm["interaction_notes"])
+
+    assert eval_bfunnel["raw_synergy"] > 0.0
+    assert eval_bfunnel["composite_score"] > 50.0
+    assert eval_bfunnel["spice_bonus"] == 2.0
+    assert any("mishra" in n.lower() for n in eval_bfunnel["interaction_notes"])
+

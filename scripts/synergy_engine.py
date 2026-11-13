@@ -125,10 +125,11 @@ INPUT_PATTERNS: dict[str, list[str]] = {
         r"cards?\s+in\s+your\s+graveyard",
         r"undergrowth",
         r"return\s+.*\s+from\s+your\s+graveyard",
-        r"leaves?\s+(your\s+)?graveyard"
+        r"leaves?\s+(your\s+)?graveyard",
+        r"search\s+your\s+graveyard"
     ],
     "spells_cast": [
-        r"whenever\s+you\s+cast\s+(an\s+instant|a\s+sorcery|a\s+noncreature)",
+        r"whenever\s+(a\s+player|you)\s+casts?\s+(a\s+spell|an\s+instant|a\s+sorcery|a\s+noncreature|an\s+artifact)",
         r"magecraft",
         r"prowess",
         r"storm"
@@ -158,7 +159,8 @@ OUTPUT_PATTERNS: dict[str, list[str]] = {
         r"create\s+.*clue\s+token",
         r"create\s+.*food\s+token",
         r"create\s+.*blood\s+token",
-        r"create\s+.*artifact\s+token"
+        r"create\s+.*artifact\s+token",
+        r"put\s+.*onto\s+the\s+battlefield"
     ],
     "creature_dies": [
         r"sacrifice\s+(a|another|one\s+or\s+more|two|\d+|x|a\s+nontoken)\s+creature",
@@ -201,11 +203,12 @@ OUTPUT_PATTERNS: dict[str, list[str]] = {
     "graveyard_fill": [
         r"mill\s+(\d+|x)?\s*cards?",
         r"surveil\s*(\d+|x)?",
-        r"put\s+the\s+top\s+.*into\s+your\s+graveyard"
+        r"put\s+the\s+top\s+.*into\s+your\s+graveyard",
+        r"counter\s+(that\s+spell|target\s+spell)"
     ],
     "spells_cast": [
         r"copy\s+target\s+(instant|sorcery)\s+spell",
-        r"you\s+may\s+cast\s+.*without\s+paying"
+        r"(you|that\s+player)\s+may\s+cast\s+.*without\s+paying"
     ],
     "land_etb": [
         r"you\s+may\s+play\s+an\s+additional\s+land",
