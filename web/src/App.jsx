@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchCardsMetadata } from './utils/scryfall';
 import { parseDecklistText, calculateCohesionScore, calculateFlavorProfile, analyzeIntentionalExperience } from './utils/themeEngine';
 import { analyzeStress } from './utils/stressTester';
@@ -128,6 +128,7 @@ function App() {
   const [activeTab, setActiveTab] = useState(getInitialTab);
   const [architectParams, setArchitectParams] = useState(null);
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [activeWovenDeck, setActiveWovenDeck] = useState(null);
   const [commander, setCommander] = useState('Kozilek, the Great Distortion');
   const [bracket, setBracket] = useState(2);
   const [targetIX, setTargetIX] = useState('Aggro-Combat');
@@ -166,6 +167,213 @@ function App() {
   const [analyzed, setAnalyzed] = useState(false);
   const [results, setResults] = useState(null);
   const [backendAnalysis, setBackendAnalysis] = useState(null);
+  const latestAnalysisIdRef = useRef(0);
+
+  const [brokenChains, setBrokenChains] = useState([]);
+  const [spiceRecommendations, setSpiceRecommendations] = useState([]);
+  const [spiceLoading, setSpiceLoading] = useState(false);
+  const [selectedChainIndex, setSelectedChainIndex] = useState(0);
+  const [commanderQuery, setCommanderQuery] = useState(commander);
+  const [requestedCommander, setRequestedCommander] = useState('');
+  const [spiceLevel, setSpiceLevel] = useState(50);
+  const [recommendationLanes, setRecommendationLanes] = useState([]);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+  const [recommendationError, setRecommendationError] = useState('');
+  const [hasRequestedRecommendations, setHasRequestedRecommendations] = useState(false);
+
+  const runDeckAnalysis = useCallback(async (
+    targetDecklist = decklist,
+    targetCommander = commander,
+    targetBracket = bracket,
+    switchTabToCohesion = false
+  ) => {
+    const listText = (targetDecklist || '').trim();
+    if (!listText) return;
+
+    const currentAnalysisId = ++latestAnalysisIdRef.current;
+    setLoading(true);
+
+    try {
+      // 1. Call Backend Hybrid Analysis Engine
+      try {
+        const analyzeRes = await fetch(`${getApiBaseUrl()}/api/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commander: (targetCommander || '').trim(),
+            decklist: listText,
+            spice: spiceLevel
+          })
+        });
+        if (analyzeRes.ok && latestAnalysisIdRef.current === currentAnalysisId) {
+          const analyzeData = await analyzeRes.json();
+          setBackendAnalysis(analyzeData);
+        }
+      } catch (err) {
+        console.warn("Backend /api/analyze unavailable:", err);
+      }
+
+      // 2. Fetch Commander details dynamically from Scryfall
+      let commanderCardInfo = null;
+      try {
+        let cleanCommander = (targetCommander || '').trim();
+        const commMatch = cleanCommander.match(/^(\d+)\s+(.+)$/);
+        if (commMatch) {
+          cleanCommander = commMatch[2].trim();
+        }
+        if (cleanCommander) {
+          const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cleanCommander)}`, {
+            headers: {
+              "Accept": "application/json;q=0.9,*/*;q=0.8"
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const faces = Array.isArray(data.card_faces) ? data.card_faces : [];
+
+            let typeLine = data.type_line || "";
+            if (!typeLine && faces.length > 0) {
+              typeLine = faces.map(f => f.type_line || "").filter(Boolean).join(" // ");
+            }
+
+            let types = [];
+            let subtypes = [];
+            if (typeLine) {
+              const faceTypeLines = typeLine.split("//");
+              for (const ftl of faceTypeLines) {
+                const parts = ftl.split("—");
+                types.push(...parts[0].trim().split(/\s+/).map(t => t.toLowerCase()));
+                if (parts[1]) {
+                  subtypes.push(...parts[1].trim().split(/\s+/).filter(Boolean).map(s => s.toLowerCase()));
+                }
+              }
+              types = [...new Set(types)];
+              subtypes = [...new Set(subtypes)];
+            }
+
+            let oracleText = data.oracle_text || "";
+            if (!oracleText && faces.length > 0) {
+              oracleText = faces.map(f => f.oracle_text || "").filter(Boolean).join("\n//\n");
+            }
+
+            commanderCardInfo = {
+              name: data.name,
+              raw_type: typeLine,
+              types,
+              subtypes,
+              oracle_text: oracleText,
+              colors: data.color_identity || []
+            };
+          }
+        }
+      } catch (e) {
+        console.error("Could not fetch commander info from Scryfall:", e);
+      }
+
+      // 3. Parse deck lists
+      const parsedNames = parseDecklistText(listText);
+      
+      // 4. Batch fetch card details from Scryfall API
+      const db = await fetchCardsMetadata(parsedNames);
+      
+      // 5. Run theme calculations
+      const cohesion = calculateCohesionScore(parsedNames, db);
+      const flavor = calculateFlavorProfile(parsedNames, db);
+      const ix = analyzeIntentionalExperience(parsedNames, db, targetIX, targetBracket);
+      
+      // 6. Run stress-tester engine calculations
+      const stress = analyzeStress(parsedNames, db, commanderCardInfo, cohesion);
+      
+      // 7. Broken chain detection
+      const chains = detectBrokenChains(parsedNames, db);
+
+      if (latestAnalysisIdRef.current === currentAnalysisId) {
+        setBrokenChains(chains);
+        setSelectedChainIndex(0);
+        setSpiceRecommendations([]);
+        
+        setResults({
+          cohesion,
+          flavor,
+          ix,
+          stress,
+          totalCards: parsedNames.length,
+          commanderInfo: commanderCardInfo
+        });
+        setAnalyzed(true);
+
+        // Trigger spice fetch for first broken chain
+        if (chains.length > 0) {
+          setSpiceLoading(true);
+          const firstChain = chains[0];
+          const colorIdentity = commanderCardInfo ? commanderCardInfo.colors : [];
+          const recs = await fetchSpiceRecommendations(firstChain.queryKeyword, colorIdentity);
+          if (latestAnalysisIdRef.current === currentAnalysisId) {
+            setSpiceRecommendations(recs);
+            setSpiceLoading(false);
+          }
+        }
+
+        if (switchTabToCohesion) {
+          setActiveTab('cohesion');
+        }
+      }
+    } catch (error) {
+      if (switchTabToCohesion) {
+        alert(`Error analyzing deck list: ${error.message || error}`);
+      }
+      console.error("Deck analysis error:", error);
+    } finally {
+      if (latestAnalysisIdRef.current === currentAnalysisId) {
+        setLoading(false);
+      }
+    }
+  }, [decklist, commander, bracket, targetIX, spiceLevel]);
+
+  const handleAnalyze = () => {
+    runDeckAnalysis(decklist, commander, bracket, true);
+  };
+
+  const handleWovenDeckChange = useCallback((wovenDeck) => {
+    if (!wovenDeck) return;
+    setActiveWovenDeck(wovenDeck);
+
+    const cmdName = wovenDeck.commander?.name || (typeof wovenDeck.commander === 'string' ? wovenDeck.commander : '') || '';
+    const text = wovenDeck.decklist_text || '';
+    const tier = wovenDeck.bracket?.tier || (typeof wovenDeck.bracket === 'number' ? wovenDeck.bracket : 3);
+
+    if (cmdName) {
+      setCommander(cmdName);
+      setCommanderQuery(cmdName);
+    }
+    if (text) {
+      setDecklist(text);
+    }
+    if (tier) {
+      setBracket(tier);
+    }
+    setHasInteracted(true);
+
+    // Auto-analyze in background so Cohesion, Stress, and Spice tabs are instantly populated!
+    if (text && cmdName) {
+      runDeckAnalysis(text, cmdName, tier, false);
+    }
+  }, [runDeckAnalysis]);
+
+  const handleLoadArchitectDeck = (cmdName, text, targetTier = bracket) => {
+    if (cmdName) {
+      setCommander(cmdName);
+      setCommanderQuery(cmdName);
+    }
+    if (text) setDecklist(text);
+    if (targetTier) setBracket(targetTier);
+
+    if (analyzed && results) {
+      setActiveTab('cohesion');
+    } else {
+      runDeckAnalysis(text || decklist, cmdName || commander, targetTier, true);
+    }
+  };
 
   const handleSwapCard = (cutCard, replacementCard) => {
     if (!cutCard || !replacementCard) return;
@@ -181,151 +389,25 @@ function App() {
         protected_pillars: [...(backendAnalysis.protected_pillars || []), replacementCard]
       });
     }
-  };
 
-  const handleLoadArchitectDeck = (cmdName, text) => {
-    if (cmdName) setCommander(cmdName);
-    if (text) setDecklist(text);
-    setActiveTab('input');
-  };
-  
-  const [brokenChains, setBrokenChains] = useState([]);
-  const [spiceRecommendations, setSpiceRecommendations] = useState([]);
-  const [spiceLoading, setSpiceLoading] = useState(false);
-  const [selectedChainIndex, setSelectedChainIndex] = useState(0);
-  const [commanderQuery, setCommanderQuery] = useState(commander);
-  const [requestedCommander, setRequestedCommander] = useState('');
-  const [spiceLevel, setSpiceLevel] = useState(50);
-  const [recommendationLanes, setRecommendationLanes] = useState([]);
-  const [recommendationLoading, setRecommendationLoading] = useState(false);
-  const [recommendationError, setRecommendationError] = useState('');
-  const [hasRequestedRecommendations, setHasRequestedRecommendations] = useState(false);
-
-  const handleAnalyze = async () => {
-    if (!decklist.trim()) return;
-    setLoading(true);
-    
-    try {
-      // 1. Call Backend Hybrid Analysis Engine
-      try {
-        const analyzeRes = await fetch(`${getApiBaseUrl()}/api/analyze`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            commander: commander.trim(),
-            decklist: decklist,
-            spice: spiceLevel
-          })
-        });
-        if (analyzeRes.ok) {
-          const analyzeData = await analyzeRes.json();
-          setBackendAnalysis(analyzeData);
+    if (activeWovenDeck) {
+      const updatedCategories = { ...(activeWovenDeck.categories || {}) };
+      for (const [catKey, cards] of Object.entries(updatedCategories)) {
+        if (Array.isArray(cards)) {
+          const idx = cards.findIndex(c => c?.name?.toLowerCase() === cutCard.toLowerCase());
+          if (idx !== -1) {
+            const updatedList = [...cards];
+            updatedList[idx] = { ...cards[idx], name: replacementCard, image_url: null };
+            updatedCategories[catKey] = updatedList;
+            break;
+          }
         }
-      } catch (err) {
-        console.warn("Backend /api/analyze unavailable:", err);
       }
-
-      // 2. Fetch Commander details dynamically from Scryfall
-      let commanderCardInfo = null;
-      try {
-        let cleanCommander = commander.trim();
-        const commMatch = cleanCommander.match(/^(\d+)\s+(.+)$/);
-        if (commMatch) {
-          cleanCommander = commMatch[2].trim();
-        }
-        const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cleanCommander)}`, {
-          headers: {
-            "Accept": "application/json;q=0.9,*/*;q=0.8"
-          }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const faces = Array.isArray(data.card_faces) ? data.card_faces : [];
-
-          let typeLine = data.type_line || "";
-          if (!typeLine && faces.length > 0) {
-            typeLine = faces.map(f => f.type_line || "").filter(Boolean).join(" // ");
-          }
-
-          let types = [];
-          let subtypes = [];
-          if (typeLine) {
-            const faceTypeLines = typeLine.split("//");
-            for (const ftl of faceTypeLines) {
-              const parts = ftl.split("—");
-              types.push(...parts[0].trim().split(/\s+/).map(t => t.toLowerCase()));
-              if (parts[1]) {
-                subtypes.push(...parts[1].trim().split(/\s+/).filter(Boolean).map(s => s.toLowerCase()));
-              }
-            }
-            types = [...new Set(types)];
-            subtypes = [...new Set(subtypes)];
-          }
-
-          let oracleText = data.oracle_text || "";
-          if (!oracleText && faces.length > 0) {
-            oracleText = faces.map(f => f.oracle_text || "").filter(Boolean).join("\n//\n");
-          }
-
-          commanderCardInfo = {
-            name: data.name,
-            raw_type: typeLine,
-            types,
-            subtypes,
-            oracle_text: oracleText,
-            colors: data.color_identity || []
-          };
-        }
-      } catch (e) {
-        console.error("Could not fetch commander info from Scryfall:", e);
-      }
-
-      // 2. Parse deck lists
-      const parsedNames = parseDecklistText(decklist);
-      
-      // 3. Batch fetch card details from Scryfall API
-      const db = await fetchCardsMetadata(parsedNames);
-      
-      // 4. Run theme calculations
-      const cohesion = calculateCohesionScore(parsedNames, db);
-      const flavor = calculateFlavorProfile(parsedNames, db);
-      const ix = analyzeIntentionalExperience(parsedNames, db, targetIX, bracket);
-      
-      // 5. Run stress-tester engine calculations
-      const stress = analyzeStress(parsedNames, db, commanderCardInfo, cohesion);
-      
-      // 6. Broken chain detection
-      const chains = detectBrokenChains(parsedNames, db);
-      setBrokenChains(chains);
-      setSelectedChainIndex(0);
-      setSpiceRecommendations([]);
-      
-      setResults({
-        cohesion,
-        flavor,
-        ix,
-        stress,
-        totalCards: parsedNames.length,
-        commanderInfo: commanderCardInfo
+      setActiveWovenDeck({
+        ...activeWovenDeck,
+        decklist_text: nextDecklist,
+        categories: updatedCategories
       });
-      setAnalyzed(true);
-
-      // Trigger spice fetch for first broken chain
-      if (chains.length > 0) {
-        setSpiceLoading(true);
-        const firstChain = chains[0];
-        const colorIdentity = commanderCardInfo ? commanderCardInfo.colors : [];
-        const recs = await fetchSpiceRecommendations(firstChain.queryKeyword, colorIdentity);
-        setSpiceRecommendations(recs);
-        setSpiceLoading(false);
-      }
-      
-      setActiveTab('cohesion');
-    } catch (error) {
-      alert(`Error analyzing deck list: ${error.message || error}`);
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -413,9 +495,37 @@ function App() {
         flexWrap: 'wrap',
         gap: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flexWrap: 'wrap' }}>
           <img src="/logo.png" alt="Loreweaver Logo" className="logo-img" />
           <h1 className="app-title" style={{ margin: 0, fontSize: '1.25rem' }}>Loreweaver</h1>
+          {commander && (activeWovenDeck || analyzed) && (
+            <div 
+              onClick={() => setActiveTab('cohesion')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                borderRadius: '16px',
+                background: 'rgba(147, 51, 234, 0.22)',
+                border: '1px solid rgba(192, 132, 252, 0.4)',
+                fontSize: '0.78rem',
+                color: 'var(--text-white)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Click to view Cohesion analysis for this active deck"
+            >
+              <span style={{ color: '#c084fc' }}>✨</span>
+              <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: '600' }}>
+                {commander}
+              </span>
+              <span style={{ opacity: 0.5 }}>•</span>
+              <span style={{ fontSize: '0.72rem', color: loading ? '#facc15' : '#38bdf8' }}>
+                {loading ? 'Analyzing...' : analyzed ? '✓ Synced' : `Tier ${bracket}`}
+              </span>
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <button
@@ -472,9 +582,48 @@ function App() {
 
       {/* Main Tab Switcher */}
       <main className="tab-content">
-        {activeTab === 'input' && (
-          <div className="tab-panel">
-            <h2>Deck Analysis Input</h2>
+        <div className="tab-panel" style={{ display: activeTab === 'input' ? 'block' : 'none' }}>
+          <h2>Deck Analysis Input</h2>
+
+          {activeWovenDeck && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '8px',
+              padding: '10px 14px',
+              marginBottom: '16px',
+              borderRadius: '8px',
+              background: 'rgba(147, 51, 234, 0.15)',
+              border: '1px solid rgba(192, 132, 252, 0.35)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                <span>✨</span>
+                <span>Deck translated from <strong>Weave Deck</strong>: <strong style={{ color: '#c084fc' }}>{commander}</strong> ({results?.totalCards || 100} cards)</span>
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('builder')}
+                  className="btn"
+                  style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(147, 51, 234, 0.25)', border: '1px solid #c084fc', color: '#f3e8ff', borderRadius: '6px', cursor: 'pointer' }}
+                >
+                  Return to Weave Deck ✨
+                </button>
+                {analyzed && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('cohesion')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    View Cohesion Dashboard 🔮
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
             
             <div className="card">
               <div className="form-group">
@@ -549,24 +698,89 @@ function App() {
               </button>
             </div>
           </div>
-        )}
 
-        {activeTab === 'cohesion' && (
-          <div className="tab-panel">
-            <h2>Thematic Cohesion Dashboard</h2>
+        {/* Thematic Cohesion Dashboard */}
+        <div className="tab-panel" style={{ display: activeTab === 'cohesion' ? 'block' : 'none' }}>
+          <h2>Thematic Cohesion Dashboard</h2>
 
-            {!analyzed ? (
-              <div className="empty-state">
-                <div className="empty-icon">🔮</div>
-                <p>No analysis loaded. Go to the Input tab and run "Analyze Deck" first.</p>
+          {loading ? (
+            <div className="loader-container">
+              <div className="loader-spinner"></div>
+              <p>Analyzing {commander ? `"${commander}"` : 'deck'} cohesion & themes...</p>
+            </div>
+          ) : !analyzed || !results ? (
+            <div className="empty-state">
+              <div className="empty-icon">🔮</div>
+              <h3>No Analysis Loaded</h3>
+              <p>Weave a deck with AI or audit an existing decklist to see cohesion insights.</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('builder')}
+                  style={{ background: 'linear-gradient(135deg, #9333ea, #38bdf8)', color: '#fff', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  ✨ Weave a Deck
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('input')}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  📥 Audit Decklist
+                </button>
+                {decklist && decklist.trim() && (
+                  <button 
+                    className="btn" 
+                    onClick={() => runDeckAnalysis(decklist, commander, bracket, false)}
+                    style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    ⚡ Analyze "{commander || 'Current Deck'}"
+                  </button>
+                )}
               </div>
-            ) : loading ? (
-              <div className="loader-container">
-                <div className="loader-spinner"></div>
-                <p>Ingesting data and calculating themes...</p>
+            </div>
+          ) : (
+            <div>
+              {/* Active Deck Sync Banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
+                padding: '8px 14px',
+                marginBottom: '16px',
+                borderRadius: '8px',
+                background: 'rgba(147, 51, 234, 0.12)',
+                border: '1px solid rgba(192, 132, 252, 0.3)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <span>✨</span>
+                  <span>Active Deck: <strong style={{ color: 'var(--text-white)' }}>{commander}</strong></span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>Bracket {bracket}</span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>{results.totalCards} cards</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('builder')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(147, 51, 234, 0.25)', border: '1px solid #c084fc', color: '#f3e8ff', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Open in Weave Deck ✨
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('stress')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    View Stress Test 📊
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div>
                 {/* CFP Matchmaking Dashboard */}
                 <div className="card">
                   <div className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -824,24 +1038,89 @@ function App() {
               </div>
             )}
           </div>
-        )}
 
-        {activeTab === 'stress' && (
-          <div className="tab-panel">
-            <h2>Engine Stress-Tester Dashboard</h2>
+        {/* Engine Stress-Tester Dashboard */}
+        <div className="tab-panel" style={{ display: activeTab === 'stress' ? 'block' : 'none' }}>
+          <h2>Engine Stress-Tester Dashboard</h2>
 
-            {!analyzed ? (
-              <div className="empty-state">
-                <div className="empty-icon">📊</div>
-                <p>No analysis loaded. Go to the Input tab and run "Analyze Deck" first.</p>
+          {loading ? (
+            <div className="loader-container">
+              <div className="loader-spinner"></div>
+              <p>Calculating engine statistics for {commander ? `"${commander}"` : 'deck'}...</p>
+            </div>
+          ) : !analyzed || !results ? (
+            <div className="empty-state">
+              <div className="empty-icon">📊</div>
+              <h3>No Stress Analysis Loaded</h3>
+              <p>Weave a deck with AI or audit an existing decklist to see stress testing & CDI metrics.</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('builder')}
+                  style={{ background: 'linear-gradient(135deg, #9333ea, #38bdf8)', color: '#fff', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  ✨ Weave a Deck
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('input')}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  📥 Audit Decklist
+                </button>
+                {decklist && decklist.trim() && (
+                  <button 
+                    className="btn" 
+                    onClick={() => runDeckAnalysis(decklist, commander, bracket, false)}
+                    style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    ⚡ Analyze "{commander || 'Current Deck'}"
+                  </button>
+                )}
               </div>
-            ) : loading ? (
-              <div className="loader-container">
-                <div className="loader-spinner"></div>
-                <p>Calculating engine statistics...</p>
+            </div>
+          ) : (
+            <div>
+              {/* Active Deck Sync Banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
+                padding: '8px 14px',
+                marginBottom: '16px',
+                borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.3)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <span>📊</span>
+                  <span>Stress testing: <strong style={{ color: 'var(--text-white)' }}>{commander}</strong></span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>Bracket {bracket}</span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>{results.totalCards} cards</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('cohesion')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(147, 51, 234, 0.25)', border: '1px solid #c084fc', color: '#f3e8ff', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    View Cohesion 🔮
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('builder')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Open in Weave Deck ✨
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div>
                 {/* CDI Dashboard card */}
                 <div className="card">
                   <div className="metric-row">
@@ -950,31 +1229,99 @@ function App() {
               </div>
             )}
           </div>
-        )}
 
-        {activeTab === 'spice' && (
-          <div className="tab-panel">
-            <h2>Proactive Spice Injector</h2>
+        {/* Proactive Spice Injector */}
+        <div className="tab-panel" style={{ display: activeTab === 'spice' ? 'block' : 'none' }}>
+          <h2>Proactive Spice Injector</h2>
 
-            {!analyzed ? (
-              <div className="empty-state">
-                <div className="empty-icon">🌶️</div>
-                <p>No analysis loaded. Go to the Input tab and run "Analyze Deck" first.</p>
+          {loading ? (
+            <div className="loader-container">
+              <div className="loader-spinner"></div>
+              <p>Searching for broken chains in {commander ? `"${commander}"` : 'deck'}...</p>
+            </div>
+          ) : !analyzed || !results ? (
+            <div className="empty-state">
+              <div className="empty-icon">🌶️</div>
+              <h3>No Spice Analysis Loaded</h3>
+              <p>Weave a deck with AI or audit an existing decklist to see broken synergy chains & spice recommendations.</p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('builder')}
+                  style={{ background: 'linear-gradient(135deg, #9333ea, #38bdf8)', color: '#fff', padding: '8px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}
+                >
+                  ✨ Weave a Deck
+                </button>
+                <button 
+                  className="btn" 
+                  onClick={() => setActiveTab('input')}
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-main)', border: '1px solid var(--border-color)', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                >
+                  📥 Audit Decklist
+                </button>
+                {decklist && decklist.trim() && (
+                  <button 
+                    className="btn" 
+                    onClick={() => runDeckAnalysis(decklist, commander, bracket, false)}
+                    style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    ⚡ Analyze "{commander || 'Current Deck'}"
+                  </button>
+                )}
               </div>
-            ) : loading ? (
-              <div className="loader-container">
-                <div className="loader-spinner"></div>
-                <p>Searching for broken chains...</p>
+            </div>
+          ) : (
+            <div>
+              {/* Active Deck Sync Banner */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '8px',
+                padding: '8px 14px',
+                marginBottom: '16px',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem' }}>
+                  <span>🌶️</span>
+                  <span>Injecting spice for: <strong style={{ color: 'var(--text-white)' }}>{commander}</strong></span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>Bracket {bracket}</span>
+                  <span style={{ opacity: 0.6 }}>•</span>
+                  <span style={{ color: 'var(--text-accent)' }}>{results.totalCards} cards</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('cohesion')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(147, 51, 234, 0.25)', border: '1px solid #c084fc', color: '#f3e8ff', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    View Cohesion 🔮
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('builder')}
+                    className="btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    Open in Weave Deck ✨
+                  </button>
+                </div>
               </div>
-            ) : brokenChains.length === 0 ? (
-              <div className="card" style={{ textAlign: 'center', padding: '30px 20px' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✓</div>
-                <h3>All Theme Chains Intact</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-accent)', marginTop: '8px' }}>
-                  Your generators (cards placing counters/creating tokens) and payoffs (doubling season/aristocrat outlets) are perfectly balanced!
-                </p>
-              </div>
-            ) : (
+
+              {brokenChains.length === 0 ? (
+                <div className="card" style={{ textAlign: 'center', padding: '30px 20px' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>✓</div>
+                  <h3>All Theme Chains Intact</h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-accent)', marginTop: '8px' }}>
+                    Your generators (cards placing counters/creating tokens) and payoffs (doubling season/aristocrat outlets) are perfectly balanced!
+                  </p>
+                </div>
+              ) : (
               <div>
                 {/* Selector for broken chains */}
                 <div className="form-group">
@@ -1144,28 +1491,31 @@ function App() {
                 </div>
               </div>
             )}
-          </div>
-        )}
-        {activeTab === 'links' && (
-          <div className="tab-panel" style={{ padding: 0 }}>
-            <CreatorLinkHub
-              onOpenDeck={(params) => {
-                setArchitectParams(params);
-                setActiveTab('builder');
-              }}
-              onGoToBuilder={() => setActiveTab('builder')}
-            />
-          </div>
-        )}
-        {activeTab === 'builder' && (
-          <div className="tab-panel" style={{ padding: 0 }}>
-            <DeckArchitect 
-              initialParams={architectParams}
-              onClearInitialParams={() => setArchitectParams(null)}
-              onAnalyzeDeck={handleLoadArchitectDeck} 
-            />
-          </div>
-        )}
+            </div>
+          )}
+        </div>
+
+        {/* Video Decks / Link Hub */}
+        <div className="tab-panel" style={{ padding: 0, display: activeTab === 'links' ? 'block' : 'none' }}>
+          <CreatorLinkHub
+            onOpenDeck={(params) => {
+              setArchitectParams(params);
+              setActiveTab('builder');
+            }}
+            onGoToBuilder={() => setActiveTab('builder')}
+          />
+        </div>
+
+        {/* Weave Deck / Architect */}
+        <div className="tab-panel" style={{ padding: 0, display: activeTab === 'builder' ? 'block' : 'none' }}>
+          <DeckArchitect 
+            initialParams={architectParams}
+            onClearInitialParams={() => setArchitectParams(null)}
+            onAnalyzeDeck={handleLoadArchitectDeck}
+            activeDeckResult={activeWovenDeck}
+            onDeckChange={handleWovenDeckChange}
+          />
+        </div>
       </main>
 
       {/* Balanced 5-tab Bottom Nav with prominent Builder hero in the center */}

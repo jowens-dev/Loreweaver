@@ -93,7 +93,13 @@ const SUGGESTIONS = [
   'Kozilek, the Broken Reality'
 ];
 
-export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearInitialParams }) {
+export default function DeckArchitect({ 
+  onAnalyzeDeck, 
+  initialParams, 
+  onClearInitialParams,
+  activeDeckResult,
+  onDeckChange 
+}) {
   // Form State
   const [commander, setCommander] = useState('');
   const [deckIdea, setDeckIdea] = useState('');
@@ -109,7 +115,23 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
   // Loading & Result State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [deckResult, setDeckResult] = useState(null);
+  const [deckResult, setDeckResultState] = useState(activeDeckResult || null);
+
+  useEffect(() => {
+    if (activeDeckResult) {
+      setDeckResultState(activeDeckResult);
+    }
+  }, [activeDeckResult]);
+
+  const setDeckResult = useCallback((nextValOrFn) => {
+    setDeckResultState((prev) => {
+      const next = typeof nextValOrFn === 'function' ? nextValOrFn(prev) : nextValOrFn;
+      if (onDeckChange) {
+        onDeckChange(next);
+      }
+      return next;
+    });
+  }, [onDeckChange]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportModalFormat, setExportModalFormat] = useState('moxfield');
@@ -325,7 +347,7 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
     } finally {
       setLoading(false);
     }
-  }, [commander, deckIdea, bracket, budget, selectedColors, winCon, houseRules, customBans]);
+  }, [commander, deckIdea, bracket, budget, selectedColors, winCon, houseRules, customBans, setDeckResult]);
 
   const handleBuildDeck = (e) => {
     if (e) e.preventDefault();
@@ -341,14 +363,9 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
 
   const hasProcessedInitialRef = useRef(false);
 
-  // URL Deep-linking and initialParams handling on mount only
+  // URL Deep-linking and initialParams handling
   useEffect(() => {
-    if (hasProcessedInitialRef.current) return;
-
-    let paramsToBuild = null;
-
     if (initialParams && initialParams.commander) {
-      hasProcessedInitialRef.current = true;
       setCommander(initialParams.commander);
       if (initialParams.bracket) {
         const safeB = Math.min(5, Math.max(1, parseInt(initialParams.bracket, 10) || 3));
@@ -356,9 +373,15 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
       }
       if (initialParams.budget) setBudget(initialParams.budget);
       if (initialParams.win_con) setWinCon(initialParams.win_con);
-      paramsToBuild = initialParams;
+      executeBuildRef.current(initialParams);
       onClearInitialParams?.();
-    } else if (typeof window !== 'undefined' && window.location.search) {
+      return;
+    }
+
+    if (hasProcessedInitialRef.current) return;
+    hasProcessedInitialRef.current = true;
+
+    if (typeof window !== 'undefined' && window.location.search) {
       const searchParams = new URLSearchParams(window.location.search);
       const cmd = searchParams.get('commander') || searchParams.get('c');
       const b = searchParams.get('bracket') || searchParams.get('b');
@@ -367,7 +390,6 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
       const auto = searchParams.get('auto') === 'true' || searchParams.get('build') === 'true';
 
       if (cmd) {
-        hasProcessedInitialRef.current = true;
         setCommander(cmd);
         const p = { commander: cmd };
         if (b) {
@@ -384,13 +406,9 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
           p.win_con = wc;
         }
         if (auto) {
-          paramsToBuild = p;
+          executeBuildRef.current(p);
         }
       }
-    }
-
-    if (paramsToBuild && paramsToBuild.commander) {
-      executeBuildRef.current(paramsToBuild);
     }
   }, [initialParams, onClearInitialParams]);
 
@@ -456,7 +474,11 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
 
   const handleSendToAnalyzer = () => {
     if (onAnalyzeDeck && deckResult?.decklist_text) {
-      onAnalyzeDeck(deckResult.commander?.name || '', deckResult.decklist_text);
+      onAnalyzeDeck(
+        deckResult.commander?.name || '', 
+        deckResult.decklist_text,
+        deckResult.bracket?.tier || bracket
+      );
     }
   };
 
@@ -1269,9 +1291,10 @@ export default function DeckArchitect({ onAnalyzeDeck, initialParams, onClearIni
                         gap: '4px',
                         cursor: 'pointer'
                       }}
+                      title="View Cohesion, Stress Testing, and Tactical Cut analysis for this deck"
                     >
-                      <ExternalLink size={14} />
-                      <span>Audit in Analyzer</span>
+                      <Sparkles size={14} />
+                      <span>View Deck Analysis</span>
                     </button>
                   )}
                 </div>
