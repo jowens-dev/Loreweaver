@@ -810,6 +810,16 @@ class TestLogParserPopperianEdgeCases:
         assert len(new_states_2) == 1
         assert new_states_2[0].pack_card_ids == [201]
 
+        # Step 2b: Simulate in-place overwrite with equal-length line (same inode AND same file size, different content)
+        p2b = gen.create_draft_status_payload(pack_number=1, pick_number=2, draft_pack=[202], picked_cards=[])
+        line2b = gen.format_log_line(p2b)
+        assert len(line2b) == len(line2)
+        log_file.write_text(line2b + "\n", encoding="utf-8")
+
+        new_states_2b = watcher.check_for_updates()
+        assert len(new_states_2b) == 1
+        assert new_states_2b[0].pack_card_ids == [202]
+
         # Step 3: Simulate log rotation (log file unlinked and recreated with new inode)
         log_file.unlink()
         p3 = gen.create_draft_status_payload(pack_number=1, pick_number=3, draft_pack=[301], picked_cards=[])

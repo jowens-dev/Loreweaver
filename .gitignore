@@ -9,6 +9,8 @@ dist/
 build/
 *.spec
 .env
+*.db-wal
+*.db-shm
 
 # Exclude large raw Scryfall database
 scripts/oracle-cards.json

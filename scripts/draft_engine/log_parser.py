@@ -841,6 +841,7 @@ class DraftLogWatcher:
         self.parser = parser or ArenaLogParser()
         self._last_position = 0
         self._last_inode: Optional[int] = None
+        self._last_first_line: Optional[str] = None
         self.current_state: Optional[DraftState] = None
         self.draft_history: List[DraftState] = []
         self.accumulated_pool: List[int] = []
@@ -850,10 +851,18 @@ class DraftLogWatcher:
             self._last_inode = getattr(stat, "st_ino", None)
             if auto_seek_end:
                 self._last_position = stat.st_size
+                try:
+                    with open(self.log_path, "r", encoding="utf-8", errors="replace") as f:
+                        first_line = f.readline()
+                        if first_line:
+                            self._last_first_line = first_line
+                except Exception:
+                    pass
 
     def reset(self) -> None:
         """Reset watcher state and position back to beginning of log."""
         self._last_position = 0
+        self._last_first_line = None
         self.current_state = None
         self.draft_history.clear()
         self.accumulated_pool.clear()
@@ -880,6 +889,15 @@ class DraftLogWatcher:
         new_states: List[DraftState] = []
         try:
             with open(self.log_path, "r", encoding="utf-8", errors="replace") as f:
+                first_line = f.readline()
+                if (
+                    self._last_position > 0
+                    and self._last_first_line is not None
+                    and first_line != self._last_first_line
+                ):
+                    self._last_position = 0
+                if first_line:
+                    self._last_first_line = first_line
                 f.seek(self._last_position)
                 for line in f:
                     state = self.parser.parse_line(line)

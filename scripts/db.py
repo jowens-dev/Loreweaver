@@ -19,6 +19,11 @@ def get_connection(db_path: Path | str | None = None) -> sqlite3.Connection:
         raise FileNotFoundError(f"Database not found at {path}. Run scripts/ingest.py first.")
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode = WAL;")
+        conn.execute("PRAGMA mmap_size = 268435456;")
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
