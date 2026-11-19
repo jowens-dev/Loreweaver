@@ -160,9 +160,15 @@ export default function DeckArchitect({
     return names;
   }, [deckResult]);
 
+  const normalizeRoleKey = (rawRole) => {
+    const cleaned = String(rawRole || 'synergy').trim().toLowerCase().replace(/\s+/g, '_');
+    if (cleaned === 'wincon' || cleaned === 'win_cons') return 'win_con';
+    return cleaned;
+  };
+
   const handleOpenSwapModal = (card, role) => {
     setActiveSwapCard(card);
-    setActiveSwapRole(role);
+    setActiveSwapRole(normalizeRoleKey(role));
     setIsSwapModalOpen(true);
   };
 
@@ -170,32 +176,59 @@ export default function DeckArchitect({
     if (!deckResult || !oldCard || !newCard) return;
 
     const updatedCategories = { ...deckResult.categories };
-    const roleKey = role || 'synergy';
+    const roleKey = normalizeRoleKey(role);
     const roleCards = [...(updatedCategories[roleKey] || [])];
 
-    // Find first occurrence of oldCard
+    // Ensure newCard carries a numeric price
+    const normalizedNewCard = {
+      ...newCard,
+      price: typeof newCard.price === 'number' && newCard.price < 990 ? newCard.price : (Number(oldCard.price) || 0.35)
+    };
+
+    // Find first occurrence of oldCard in target role
     const replaceIdx = roleCards.findIndex(
       (c) => c.name.toLowerCase() === oldCard.name.toLowerCase()
     );
 
     if (replaceIdx !== -1) {
-      roleCards[replaceIdx] = newCard;
+      roleCards[replaceIdx] = normalizedNewCard;
+      updatedCategories[roleKey] = roleCards;
     } else {
-      roleCards.push(newCard);
+      // Fallback: locate oldCard across all non-commander categories so 100-card invariant never breaks
+      let replacedFallback = false;
+      for (const [catKey, catList] of Object.entries(updatedCategories)) {
+        if (catKey === 'commander' || !Array.isArray(catList)) continue;
+        const idx = catList.findIndex((c) => c.name.toLowerCase() === oldCard.name.toLowerCase());
+        if (idx !== -1) {
+          const nextCatList = [...catList];
+          nextCatList[idx] = normalizedNewCard;
+          updatedCategories[catKey] = nextCatList;
+          replacedFallback = true;
+          break;
+        }
+      }
+      if (!replacedFallback) {
+        roleCards.push(normalizedNewCard);
+        updatedCategories[roleKey] = roleCards;
+      }
     }
-    updatedCategories[roleKey] = roleCards;
 
-    // Recalculate curve and avg_cmc across non-land mainboard cards
+    // Recalculate curve, avg_cmc, and total_price across the deck
     const nonlandCards = [];
+    let totalDeckPrice = 0;
     for (const [catName, cards] of Object.entries(updatedCategories)) {
-      if (catName === 'commander' || catName === 'lands') continue;
+      if (!Array.isArray(cards)) continue;
       for (const c of cards) {
+        const cPrice = typeof c.price === 'number' && c.price < 990 ? c.price : 0.25;
+        totalDeckPrice += cPrice;
+        if (catName === 'commander' || catName === 'lands') continue;
         const typeLine = (c.type_line || '').toLowerCase();
         if (!typeLine.includes('land')) {
           nonlandCards.push(c);
         }
       }
     }
+    totalDeckPrice = Number(totalDeckPrice.toFixed(2));
 
     const avgCmc = nonlandCards.length > 0
       ? Number((nonlandCards.reduce((sum, c) => sum + (Number(c.cmc) || 0), 0) / nonlandCards.length).toFixed(2))
@@ -211,6 +244,8 @@ export default function DeckArchitect({
     const updatedStats = {
       ...deckResult.stats,
       avg_cmc: avgCmc,
+      total_price: totalDeckPrice,
+      total_price_usd: totalDeckPrice,
       mana_curve: manaCurve,
       roles: {
         ...deckResult.stats?.roles,
@@ -492,7 +527,7 @@ export default function DeckArchitect({
       cards: deckResult.commander ? [deckResult.commander] : []
     },
     {
-      id: 'win con',
+      id: 'win_con',
       title: 'Win Condition Core',
       icon: '🏆',
       badgeColor: '#ef4444',
@@ -1034,6 +1069,7 @@ export default function DeckArchitect({
                       borderRadius: '12px'
                     }}>
                       Budget: {deckResult.budget === 'ultra_budget' ? 'Ultra-Budget (<$50)' : deckResult.budget === 'budget' ? 'Budget (<$100)' : deckResult.budget === 'moderate' ? 'Moderate (~$250)' : 'Unlimited'}
+                      {typeof deckResult.stats?.total_price === 'number' ? ` • Est. $${deckResult.stats.total_price.toFixed(2)}` : ''}
                     </span>
                     {((deckResult.house_rules && deckResult.house_rules.length > 0) || (deckResult.custom_bans && deckResult.custom_bans.length > 0)) && (
                       <span style={{ 
@@ -1103,11 +1139,17 @@ export default function DeckArchitect({
 
               {/* Curve & CMC */}
               <div className="card" style={{ padding: '12px 16px' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>📊 Curve & Average CMC</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>📊 Curve, Budget & Size</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', margin: '4px 0' }}>
                   <span>Average Nonland CMC:</span>
                   <strong style={{ color: '#f59e0b' }}>{deckResult.stats?.avg_cmc}</strong>
                 </div>
+                {typeof deckResult.stats?.total_price === 'number' && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', margin: '4px 0' }}>
+                    <span>Estimated Deck Cost:</span>
+                    <strong style={{ color: '#38bdf8' }}>${deckResult.stats.total_price.toFixed(2)}</strong>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                   <span>Total Deck Size:</span>
                   <strong style={{ color: 'var(--color-green)' }}>100 / 100 Cards</strong>
@@ -1306,7 +1348,7 @@ export default function DeckArchitect({
               {[
                 { id: 'all', label: 'All Sections (100)' },
                 { id: 'commander', label: 'Commander (1)' },
-                { id: 'win con', label: `Win Cons (${deckResult.stats?.roles?.win_con})` },
+                { id: 'win_con', label: `Win Cons (${deckResult.stats?.roles?.win_con})` },
                 { id: 'ramp', label: `Ramp (${deckResult.stats?.roles?.ramp})` },
                 { id: 'draw', label: `Draw (${deckResult.stats?.roles?.draw})` },
                 { id: 'removal', label: `Removal (${deckResult.stats?.roles?.removal})` },
@@ -1418,8 +1460,13 @@ export default function DeckArchitect({
                                     {card.mana_cost}
                                   </span>
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                  {card.type_line}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '3px', gap: '4px' }}>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.type_line}</span>
+                                  {typeof card.price === 'number' && card.price < 990 && (
+                                    <span style={{ color: '#4ade80', fontWeight: '700', whiteSpace: 'nowrap' }}>
+                                      ${(card.price * (card.count || 1)).toFixed(2)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -1488,6 +1535,9 @@ export default function DeckArchitect({
         role={activeSwapRole}
         commander={deckResult?.commander?.name || (deckResult?.commanders || []).map((c) => c.name).join(' / ')}
         bracket={deckResult?.bracket?.tier || 3}
+        budget={deckResult?.budget || budget}
+        houseRules={deckResult?.house_rules || houseRules}
+        customBans={deckResult?.custom_bans || customBans}
         exclude={allDeckCardNames}
         onSwap={handleConfirmCardSwap}
       />

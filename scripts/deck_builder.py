@@ -24,6 +24,7 @@ try:
         calculate_composite_score,
         get_bulk_prices,
         get_card_price,
+        get_manapool_affiliate_url,
         DEFAULT_SENTINEL_PRICE
     )
 except ImportError:
@@ -35,6 +36,7 @@ except ImportError:
         calculate_composite_score,
         get_bulk_prices,
         get_card_price,
+        get_manapool_affiliate_url,
         DEFAULT_SENTINEL_PRICE
     )
 
@@ -262,12 +264,35 @@ COMPACT_COMBO_CARDS = DISALLOWED_LOW_BRACKET_COMBOS
 BASIC_LANDS = {"plains", "island", "swamp", "mountain", "forest", "wastes"}
 
 
+BUDGET_CARD_PRICE_CAPS: dict[str, float] = {
+    "ultra_budget": 2.50,
+    "budget": 8.00,
+    "moderate": 25.00,
+    "unlimited": 1_000_000.0,
+}
+
+BUDGET_TOTAL_DECK_TARGETS: dict[str, float] = {
+    "ultra_budget": 50.00,
+    "budget": 100.00,
+    "moderate": 250.00,
+    "unlimited": 1_000_000.0,
+}
+
+BUDGET_BETA_MAP: dict[str, float] = {
+    "ultra_budget": 2.5,
+    "budget": 2.1,
+    "moderate": 1.4,
+    "unlimited": 0.15,
+}
+
+
 def is_card_excluded(
     card_name: str,
     budget: str = "moderate",
     house_rules: set[str] | None = None,
     custom_bans: set[str] | None = None,
-    bracket: int = 3
+    bracket: int = 3,
+    price_usd: float | None = None,
 ) -> bool:
     """Check if a card is prohibited by budget constraints, house rules, or custom bans."""
     name_lower = card_name.strip().lower()
@@ -293,7 +318,7 @@ def is_card_excluded(
         if "no_tutors" in house_rules and name_lower in NO_TUTORS_CARDS:
             return True
 
-    # 3. Budget tier enforcement
+    # 3. Budget tier enforcement (static lists + actual USD price threshold)
     if budget == "ultra_budget":
         if name_lower in FETCHLANDS:
             return True
@@ -309,6 +334,19 @@ def is_card_excluded(
         if name_lower in FETCHLANDS:
             return True
         if name_lower in EXPENSIVE_RESERVED_LIST:
+            return True
+    elif budget == "moderate":
+        if name_lower in EXPENSIVE_RESERVED_LIST:
+            return True
+
+    if price_usd is not None and price_usd != DEFAULT_SENTINEL_PRICE:
+        if budget in {"ultra_budget", "budget"}:
+            max_card_price = BUDGET_CARD_PRICE_CAPS.get(budget, 1_000_000.0)
+        elif budget == "moderate" and bracket <= 3:
+            max_card_price = BUDGET_CARD_PRICE_CAPS["moderate"]
+        else:
+            max_card_price = 1_000_000.0
+        if float(price_usd) > max_card_price:
             return True
 
     return False
@@ -1026,10 +1064,19 @@ def assemble_lands(
     def try_add(card_name: str) -> bool:
         if card_name.lower() in used_names:
             return False
-        if is_card_excluded(card_name, budget=budget, house_rules=house_rules, custom_bans=custom_bans, bracket=bracket):
+        card_price = get_card_price(conn, card_name)
+        if is_card_excluded(
+            card_name,
+            budget=budget,
+            house_rules=house_rules,
+            custom_bans=custom_bans,
+            bracket=bracket,
+            price_usd=card_price,
+        ):
             return False
         c = db.get_card_by_name(conn, card_name)
         if c and set(c["color_identity"]).issubset(allowed_colors):
+            c["price"] = card_price
             lands.append(c)
             used_names.add(card_name.lower())
             return True
@@ -1660,13 +1707,24 @@ def build_deck(
     commander_names_lower = {cmd["name"].lower() for cmd in commanders}
 
     # 3. Filter pool by Bracket, Budget, House Rules, & Custom Bans
+    pool_prices = get_bulk_prices(conn, [c["name"] for c in pool])
     filtered_pool: list[dict[str, Any]] = []
     for c in pool:
         name_lower = c["name"].lower()
         if name_lower in commander_names_lower:
             continue
 
-        if is_card_excluded(c["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+        c_price = pool_prices.get(c["name"], get_card_price(conn, c["name"]))
+        c["price"] = c_price
+
+        if is_card_excluded(
+            c["name"],
+            budget=budget,
+            house_rules=house_rules_set,
+            custom_bans=custom_bans_set,
+            bracket=bracket,
+            price_usd=c_price,
+        ):
             continue
 
         if not cfg["allow_fast_mana"] and name_lower in FAST_MANA_CARDS:
@@ -1694,7 +1752,18 @@ def build_deck(
         nl = card["name"].lower()
         if nl in deck_cards or nl in commander_names_lower:
             return False
-        if is_card_excluded(card["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+        c_price = card.get("price")
+        if c_price is None:
+            c_price = pool_prices.get(card["name"], get_card_price(conn, card["name"]))
+            card["price"] = c_price
+        if is_card_excluded(
+            card["name"],
+            budget=budget,
+            house_rules=house_rules_set,
+            custom_bans=custom_bans_set,
+            bracket=bracket,
+            price_usd=c_price,
+        ):
             return False
         deck_cards[nl] = card
         categorized[role].append(card)
@@ -1772,11 +1841,10 @@ def build_deck(
             continue
         raw_score = score_synergy(c, primary_commander, prompt_tokens, preferred_win_con, bracket, intents=intents)
         c_price = prices_map.get(c["name"], DEFAULT_SENTINEL_PRICE)
-        if budget == "unlimited" or bracket >= 5:
+        if budget == "unlimited" or (bracket >= 5 and budget == "unlimited"):
             final_score = raw_score
         else:
-            # Stricter logarithmic drag for budget tiers, balanced curve for moderate
-            beta = 2.1 if budget in {"budget", "ultra_budget"} else 1.8
+            beta = BUDGET_BETA_MAP.get(budget, 1.4)
             final_score = calculate_composite_score(raw_score, c_price, c.get("edhrec_rank"), beta=beta)
         scored_candidates.append((final_score, c, roles))
 
@@ -1795,6 +1863,23 @@ def build_deck(
             if "planeswalker" in card.get("type_line", "").lower() and get_pw_count() >= 2:
                 continue
             add_card(card, "ramp")
+
+    # Fill Win Con quota if WIN_CON_PACKAGES fell short due to budget or custom bans
+    if len(categorized["win_con"]) < cfg["target_win_con"]:
+        for score, card, roles in scored_candidates:
+            if len(categorized["win_con"]) >= cfg["target_win_con"]:
+                break
+            oracle_lower = (card.get("oracle_text") or "").lower()
+            cmc_val = float(card.get("cmc") or 0.0)
+            if (
+                "win_con" in roles
+                or cmc_val >= 5
+                or "trample" in oracle_lower
+                or "each opponent loses" in oracle_lower
+                or "damage to each opponent" in oracle_lower
+                or "win the game" in oracle_lower
+            ):
+                add_card(card, "win_con")
 
     # Fill Draw quota
     for score, card, roles in scored_candidates:
@@ -1922,8 +2007,26 @@ def build_deck(
 
     categorized["lands"] = lands
 
-    # 8. Compute Deck Statistics & Hypergeometric Consistency
+    # 8. Compute Deck Statistics, Pricing & Hypergeometric Consistency
     full_decklist_cards = commanders + list(deck_cards.values()) + lands
+    all_deck_names = [c["name"] for c in full_decklist_cards]
+    final_prices_map = get_bulk_prices(conn, all_deck_names)
+
+    total_price_usd = 0.0
+    for c in full_decklist_cards:
+        c_name = c["name"]
+        if c_name.lower() in BASIC_LANDS:
+            p_val = 0.10
+        else:
+            raw_p = c.get("price")
+            if raw_p is None or raw_p == DEFAULT_SENTINEL_PRICE:
+                raw_p = final_prices_map.get(c_name, DEFAULT_SENTINEL_PRICE)
+            p_val = 0.25 if raw_p == DEFAULT_SENTINEL_PRICE else round(float(raw_p), 2)
+        c["price"] = p_val
+        c["mana_pool_url"] = get_manapool_affiliate_url(c_name, ref="loreweaver", source="loreweaver_deck")
+        total_price_usd += p_val
+    total_price_usd = round(total_price_usd, 2)
+
     nonland_spells = [c for c in full_decklist_cards if "land" not in classify_card_role(c) and c["name"] not in {cmd["name"] for cmd in commanders}]
 
     avg_cmc = round(sum(c.get("cmc", 0.0) for c in nonland_spells) / max(1, len(nonland_spells)), 2)
@@ -2007,6 +2110,9 @@ def build_deck(
         "stats": {
             "card_count": num_commanders + len(spells) + len(lands),
             "avg_cmc": avg_cmc,
+            "total_price": total_price_usd,
+            "total_price_usd": total_price_usd,
+            "budget_target_usd": BUDGET_TOTAL_DECK_TARGETS.get(budget, 250.0),
             "mana_curve": mana_curve,
             "roles": {
                 "lands": len(lands),

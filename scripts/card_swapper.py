@@ -198,6 +198,9 @@ def get_swap_candidates(
     commander_name: str = "",
     category: str = "synergy",
     bracket: int = 3,
+    budget: str = "moderate",
+    house_rules: list[str] | set[str] | None = None,
+    custom_bans: list[str] | set[str] | None = None,
     exclude: list[str] | set[str] | None = None,
     limit: int = 8,
 ) -> list[dict[str, Any]]:
@@ -209,15 +212,23 @@ def get_swap_candidates(
         commander_name: Commander name(s) to resolve legal color identity.
         category: Operational lane ('ramp', 'draw', 'removal', 'win_con', 'synergy', 'lands').
         bracket: Commander power tier from 1 to 5.
+        budget: Budget tier ('ultra_budget', 'budget', 'moderate', 'unlimited').
+        house_rules: Optional list/set of active house rules.
+        custom_bans: Optional list/set of custom banned card names.
         exclude: List or set of card names already in the deck to prevent duplicates.
         limit: Maximum number of candidate cards to return (default: 8).
 
     Returns:
-        List of candidate dictionaries: [{ name, mana_cost, cmc, type_line, oracle_text, image_url, reason }]
+        List of candidate dictionaries: [{ name, mana_cost, cmc, type_line, oracle_text, image_url, reason, price, ... }]
     """
     bracket = max(1, min(5, int(bracket)))
     category_norm = normalize_category(category)
     limit = max(1, min(50, int(limit)))
+    budget = (budget or "moderate").strip().lower()
+    if budget not in {"ultra_budget", "budget", "moderate", "unlimited"}:
+        budget = "moderate"
+    house_rules_set = {str(r).strip().lower() for r in (house_rules or []) if str(r).strip()}
+    custom_bans_set = {str(b).strip().lower() for b in (custom_bans or []) if str(b).strip()}
     cursor = conn.cursor()
 
     # 1. Resolve Commander(s) & Allowed Color Identity
@@ -539,12 +550,25 @@ def get_swap_candidates(
 
         # Price & Intrinsic Mechanical Vector Synergy Scoring
         card_price = get_card_price(conn, card["name"])
+
+        # Enforce Budget Tier Price Caps, House Rules, and Custom Bans
+        if deck_builder.is_card_excluded(
+            card["name"],
+            budget=budget,
+            house_rules=house_rules_set,
+            custom_bans=custom_bans_set,
+            bracket=bracket,
+            price_usd=card_price,
+        ):
+            continue
+
+        beta = deck_builder.BUDGET_BETA_MAP.get(budget, 2.1)
         eval_res = evaluate_candidate_in_deck(
             candidate_card=card,
             commander_card=primary_commander,
             deck_cards=[],
             price=card_price,
-            beta=2.1
+            beta=beta
         )
 
         composite_score = eval_res["composite_score"]

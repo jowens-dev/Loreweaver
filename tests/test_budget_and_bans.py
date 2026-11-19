@@ -326,3 +326,45 @@ def test_api_build_endpoint_with_budget_and_house_rules():
     assert "Wurmcoil Engine" not in deck_names
     assert "Overgrown Tomb" not in deck_names  # Shockland excluded in ultra_budget
     assert "Verdant Catacombs" not in deck_names  # Fetchland excluded in ultra_budget
+    assert data["stats"]["total_price"] < 50.0  # Strict ultra_budget deck cost (<$50)
+
+
+def test_swap_candidates_enforces_budget_house_rules_and_custom_bans():
+    """Verify GET /api/swap-candidates strictly filters by budget cap, house_rules, and custom_bans."""
+    response = client.get(
+        "/api/swap-candidates",
+        params=[
+            ("card_name", "Mind Stone"),
+            ("commander", "Mishra, Artificer Prodigy"),
+            ("category", "win con"),
+            ("bracket", "4"),
+            ("budget", "ultra_budget"),
+            ("house_rules", "no_fast_mana"),
+            ("house_rules", "no_combos"),
+            ("custom_bans", "Moraug, Fury of Akoum"),
+            ("limit", "8"),
+        ],
+    )
+    assert response.status_code == 200
+    candidates = response.json()
+    assert len(candidates) > 0
+
+    for cand in candidates:
+        assert cand["name"] != "Moraug, Fury of Akoum", "Custom banned card leaked into swap candidates!"
+        assert cand["name"] not in COMBO_NAMES, f"Combo card '{cand['name']}' leaked under no_combos!"
+        assert cand["name"] not in FAST_MANA_NAMES, f"Fast mana '{cand['name']}' leaked under no_fast_mana!"
+        assert cand["price"] <= 2.50, f"Card '{cand['name']}' (${cand['price']}) exceeded ultra_budget $2.50 cap!"
+
+
+def test_all_34149_cards_priced_in_database():
+    """Verify card_prices table covers 100% of cards in data/cards.db so zero cards hit sentinel $999."""
+    conn = db.get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM cards")
+        total_cards = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM card_prices WHERE price_usd > 0 AND price_usd < 999.0")
+        priced_cards = cur.fetchone()[0]
+        assert priced_cards >= total_cards, f"Only {priced_cards}/{total_cards} cards have real non-sentinel prices!"
+    finally:
+        conn.close()

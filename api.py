@@ -20,6 +20,7 @@ import card_swapper  # noqa: E402
 import db  # noqa: E402
 import deck_builder  # noqa: E402
 import hybrid_engine  # noqa: E402
+import pricing_engine  # noqa: E402
 
 app = FastAPI(
     title="Loreweaver API",
@@ -120,6 +121,12 @@ def search_cards_endpoint(
             limit=limit,
             allowed_colors=allowed_colors
         )
+        if results:
+            prices_map = pricing_engine.get_bulk_prices(conn, [r["name"] for r in results])
+            for r in results:
+                p_val = prices_map.get(r["name"], pricing_engine.DEFAULT_SENTINEL_PRICE)
+                r["price"] = 0.10 if r["name"].lower() in deck_builder.BASIC_LANDS else (0.25 if p_val == pricing_engine.DEFAULT_SENTINEL_PRICE else round(float(p_val), 2))
+                r["mana_pool_url"] = pricing_engine.get_manapool_affiliate_url(r["name"], ref="loreweaver", source="loreweaver_search")
         return results
     finally:
         conn.close()
@@ -132,6 +139,9 @@ def get_swap_candidates_endpoint(
     commander: str = Query(default="", description="Commander name to resolve color identity"),
     category: str = Query(default="synergy", description="The operational role: 'ramp', 'draw', 'removal', 'win_con', 'synergy', 'lands'"),
     bracket: int = Query(default=3, ge=1, le=5, description="Commander bracket tier (1 to 5)"),
+    budget: str = Query(default="moderate", description="Budget tier ('ultra_budget', 'budget', 'moderate', 'unlimited')"),
+    house_rules: list[str] = Query(default=[], description="Active house rules ('no_combos', 'no_fast_mana', 'no_free_spells', 'no_stax', 'no_tutors')"),
+    custom_bans: list[str] = Query(default=[], description="Custom card bans to exclude"),
     exclude: list[str] = Query(default=[], description="Card names already in the deck to prevent non-basic duplicates"),
     limit: int = Query(default=8, ge=1, le=50, description="Max candidate cards to return")
 ) -> list[dict[str, Any]]:
@@ -149,6 +159,9 @@ def get_swap_candidates_endpoint(
             commander_name=commander,
             category=category,
             bracket=bracket,
+            budget=budget,
+            house_rules=house_rules,
+            custom_bans=custom_bans,
             exclude=exclude,
             limit=limit
         )

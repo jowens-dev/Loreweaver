@@ -29,6 +29,9 @@ export default function CardSwapModal({
   role = 'synergy',
   commander = '',
   bracket = 3,
+  budget = 'moderate',
+  houseRules = [],
+  customBans = [],
   exclude = [],
   onSwap
 }) {
@@ -43,6 +46,7 @@ export default function CardSwapModal({
   const [swappingCardName, setSwappingCardName] = useState(null);
 
   const searchDebounceRef = useRef(null);
+  const normalizedRole = String(role || 'synergy').trim().toLowerCase().replace(/\s+/g, '_');
 
   // Fetch smart swap candidates
   const fetchCandidates = useCallback(async () => {
@@ -54,9 +58,22 @@ export default function CardSwapModal({
       const params = new URLSearchParams();
       params.append('card_name', card.name);
       if (commander) params.append('commander', commander);
-      params.append('category', role);
+      params.append('category', normalizedRole);
       params.append('bracket', String(bracket));
+      if (budget) params.append('budget', budget);
       params.append('limit', '8');
+
+      if (Array.isArray(houseRules)) {
+        for (const hr of houseRules) {
+          if (hr) params.append('house_rules', hr);
+        }
+      }
+
+      if (Array.isArray(customBans)) {
+        for (const cb of customBans) {
+          if (cb) params.append('custom_bans', cb);
+        }
+      }
 
       // Add exclusions (limit to 120 items to stay safely within URL limits)
       if (Array.isArray(exclude)) {
@@ -78,7 +95,7 @@ export default function CardSwapModal({
     } finally {
       setLoading(false);
     }
-  }, [card, commander, role, bracket, exclude]);
+  }, [card, commander, normalizedRole, bracket, budget, houseRules, customBans, exclude]);
 
   // Initial candidate fetch on modal open
   useEffect(() => {
@@ -127,8 +144,13 @@ export default function CardSwapModal({
         const res = await fetch(`${getApiBaseUrl()}/api/search?${params.toString()}`);
         if (res.ok) {
           const results = await res.json();
-          // Filter out card being replaced and cards in exclude list
+          // Filter out card being replaced, cards in exclude list, and custom bans
           const excludeSet = new Set((exclude || []).map((e) => e.toLowerCase()));
+          if (Array.isArray(customBans)) {
+            for (const b of customBans) {
+              if (b) excludeSet.add(String(b).trim().toLowerCase());
+            }
+          }
           if (card?.name) excludeSet.add(card.name.toLowerCase());
 
           const filtered = results.filter((r) => !excludeSet.has(r.name.toLowerCase()));
@@ -146,17 +168,17 @@ export default function CardSwapModal({
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [searchQuery, commander, exclude, card]);
+  }, [searchQuery, commander, exclude, customBans, card]);
 
   if (!isOpen || !card) return null;
 
-  const currentMeta = CATEGORY_META[role] || CATEGORY_META.synergy;
+  const currentMeta = CATEGORY_META[normalizedRole] || CATEGORY_META.synergy;
 
   const handleConfirmSwap = (replacementCard) => {
     if (!replacementCard) return;
     setSwappingCardName(replacementCard.name);
     setTimeout(() => {
-      onSwap(card, replacementCard, role);
+      onSwap(card, replacementCard, normalizedRole);
       onClose();
     }, 200);
   };
@@ -406,6 +428,11 @@ export default function CardSwapModal({
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                           {res.mana_cost}
                         </span>
+                        {formatCardPrice(res.price) && (
+                          <span style={{ fontSize: '0.73rem', fontWeight: '700', color: '#4ade80' }}>
+                            {formatCardPrice(res.price)}
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                         {res.type_line}
