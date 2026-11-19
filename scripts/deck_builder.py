@@ -493,7 +493,8 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Two-Handed Axe // Sweeping Cleave", "colors": {"R"}, "desc": "Doubles attacking commander's power and grants double strike."},
         {"name": "Fireshrieker", "colors": set(), "desc": "Grants double strike for lethal two-hit commander damage."},
         {"name": "Whispersilk Cloak", "colors": set(), "desc": "Grants shroud and makes the equipped commander completely unblockable."},
-        {"name": "Rogue's Passage", "colors": set(), "desc": "Unblockable activation from the mana base."},
+        {"name": "Hero's Blade", "colors": set(), "desc": "Auto-attaches whenever a legendary creature enters and grants +3/+2."},
+        {"name": "Golem-Skin Gauntlets", "colors": set(), "desc": "Budget equipment scaling +1/+0 for each attached equipment."},
         {"name": "Sword of Feast and Famine", "colors": set(), "desc": "Untaps lands on combat damage and forces opponent discard."},
         {"name": "Colossus Hammer", "colors": set(), "desc": "+10/+10 power boost for lethal commander damage."},
         {"name": "Shadowspear", "colors": set(), "desc": "Trample and lifelink plus hexproof/indestructible removal."},
@@ -552,17 +553,17 @@ def infer_win_con_from_idea(deck_idea: str, preferred_win_con: str = "combat") -
         return pw
 
     text = deck_idea.lower()
-    if any(k in text for k in ["mill", "empty library", "self-mill", "self mill", "lab man", "laboratory maniac"]):
+    if re.search(r"\b(mill(?:s|ed|ing)?|empty\s+library|self[-\s]?mill|lab\s+man|laboratory\s+maniac)\b", text):
         return "mill"
-    if any(k in text for k in ["voltron", "commander damage", "cmdr damage", "equipment", "aura", "equip", "21 damage"]):
+    if re.search(r"\b(voltron|commander\s+damage|cmdr\s+damage|equipment|equip(?:s|ped|ping)?|auras?|21\s+damage)\b", text):
         return "voltron"
-    if any(k in text for k in ["stax", "rule of law", "hatebear", "resource denial", "lockdown", "prison", "winter orb", "tax"]):
+    if re.search(r"\b(stax|rule\s+of\s+law|hatebears?|resource\s+denial|lockdown|prison|winter\s+orb|tax(?:es|ing)?)\b", text):
         return "stax"
-    if any(k in text for k in ["infinite", "combo", "thassa", "oracle", "consultation", "breach", "brain freeze", "storm", "loop", "aetherflux"]):
+    if re.search(r"\b(infinite|combos?|thassa'?s?\s+oracle|demonic\s+consultation|underworld\s+breach|brain\s+freeze|storm|loops?|aetherflux)\b", text):
         return "combo"
-    if any(k in text for k in ["aristocrat", "drain", "sacrifice", "blood artist", "zulaport", "life loss", "lifegain"]):
+    if re.search(r"\b(aristocrats?|drain(?:s|ed|ing)?|sacrific(?:e|es|ed|ing)|blood\s+artist|zulaport|life\s+loss|lifegain)\b", text):
         return "drain"
-    if any(k in text for k in ["burn", "group slug", "ping", "direct damage", "guttersnipe", "torment of hailfire", "exsanguinate"]):
+    if re.search(r"\b(burn(?:s|ing)?|group\s+slug|ping(?:s|ed|ing|ers?)?|direct\s+damage|guttersnipe|torment\s+of\s+hailfire|exsanguinate)\b", text):
         return "burn"
     return pw
 
@@ -1824,6 +1825,8 @@ def build_deck(
     def add_card(card: dict[str, Any], role: str) -> bool:
         nl = card["name"].lower()
         if nl in deck_cards or nl in commander_names_lower:
+            return False
+        if role != "lands" and ("land" in classify_card_role(card) or "land" in (card.get("type_line") or "").lower()):
             return False
         c_price = card.get("price")
         if c_price is None:

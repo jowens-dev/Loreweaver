@@ -633,11 +633,13 @@ export default function DeckArchitect({
                     onClick={() => setCommander(s)}
                     style={{
                       fontSize: '0.75rem',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      background: 'var(--bg-primary)',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-secondary)',
+                      padding: '4px 10px',
+                      borderRadius: '14px',
+                      background: commander === s ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-interactive)',
+                      border: commander === s ? '1.5px solid #38bdf8' : '1.5px solid var(--border-interactive)',
+                      color: commander === s ? '#ffffff' : 'var(--text-secondary)',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                       cursor: 'pointer'
                     }}
                   >
@@ -679,15 +681,16 @@ export default function DeckArchitect({
                     type="button"
                     onClick={() => setBracket(b.tier)}
                     style={{
-                      padding: '8px 4px',
+                      padding: '9px 4px',
                       borderRadius: '8px',
-                      border: bracket === b.tier ? `2px solid ${b.color}` : '1px solid var(--border-color)',
-                      background: bracket === b.tier ? `${b.color}22` : 'var(--bg-primary)',
-                      color: bracket === b.tier ? b.color : 'var(--text-secondary)',
-                      fontWeight: bracket === b.tier ? 'bold' : 'normal',
+                      border: bracket === b.tier ? `2px solid ${b.color}` : '1.5px solid var(--border-interactive)',
+                      background: bracket === b.tier ? `${b.color}33` : 'var(--bg-interactive)',
+                      color: bracket === b.tier ? '#ffffff' : 'var(--text-secondary)',
+                      fontWeight: bracket === b.tier ? '800' : '600',
+                      boxShadow: bracket === b.tier ? `0 0 12px ${b.color}55` : '0 2px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
                       cursor: 'pointer',
                       textAlign: 'center',
-                      fontSize: '0.85rem'
+                      fontSize: '0.86rem'
                     }}
                   >
                     T{b.tier}
@@ -723,12 +726,14 @@ export default function DeckArchitect({
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
-                      padding: '6px 8px',
-                      borderRadius: '6px',
-                      border: winCon === wc.id ? '2px solid var(--text-accent)' : '1px solid var(--border-color)',
-                      background: winCon === wc.id ? 'rgba(56, 189, 248, 0.15)' : 'var(--bg-primary)',
-                      color: winCon === wc.id ? 'var(--text-accent)' : 'var(--text-secondary)',
-                      fontSize: '0.75rem',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: winCon === wc.id ? '2px solid #38bdf8' : '1.5px solid var(--border-interactive)',
+                      background: winCon === wc.id ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-interactive)',
+                      color: winCon === wc.id ? '#ffffff' : 'var(--text-secondary)',
+                      fontWeight: winCon === wc.id ? '700' : '500',
+                      boxShadow: winCon === wc.id ? '0 0 12px rgba(56, 189, 248, 0.35)' : '0 2px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+                      fontSize: '0.76rem',
                       cursor: 'pointer',
                       textAlign: 'left'
                     }}
@@ -755,16 +760,16 @@ export default function DeckArchitect({
                       type="button"
                       onClick={() => toggleColor(pip.key)}
                       style={{
-                        width: '34px',
-                        height: '34px',
+                        width: '36px',
+                        height: '36px',
                         borderRadius: '50%',
-                        border: active ? `3px solid ${pip.border}` : '1px solid var(--border-color)',
+                        border: active ? `3px solid ${pip.border}` : '1.5px solid var(--border-interactive)',
                         background: pip.bg,
                         color: pip.text,
                         fontWeight: 'bold',
                         fontSize: '0.85rem',
                         cursor: 'pointer',
-                        boxShadow: active ? `0 0 8px ${pip.border}88` : 'none',
+                        boxShadow: active ? `0 0 10px ${pip.border}` : '0 2px 4px rgba(0,0,0,0.4)',
                         transition: 'all 0.15s ease'
                       }}
                       title={pip.label}
@@ -791,13 +796,14 @@ export default function DeckArchitect({
                     type="button"
                     onClick={() => setBudget(b.id)}
                     style={{
-                      padding: '8px 6px',
-                      borderRadius: '6px',
-                      border: budget === b.id ? '2px solid var(--color-green)' : '1px solid var(--border-color)',
-                      background: budget === b.id ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg-primary)',
-                      color: budget === b.id ? 'var(--color-green)' : 'var(--text-secondary)',
-                      fontSize: '0.75rem',
-                      fontWeight: budget === b.id ? '600' : 'normal',
+                      padding: '9px 6px',
+                      borderRadius: '8px',
+                      border: budget === b.id ? '2px solid var(--color-green)' : '1.5px solid var(--border-interactive)',
+                      background: budget === b.id ? 'rgba(34, 197, 94, 0.25)' : 'var(--bg-interactive)',
+                      color: budget === b.id ? '#ffffff' : 'var(--text-secondary)',
+                      fontSize: '0.76rem',
+                      fontWeight: budget === b.id ? '700' : '500',
+                      boxShadow: budget === b.id ? '0 0 12px rgba(34, 197, 94, 0.35)' : '0 2px 4px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
                       cursor: 'pointer',
                       textAlign: 'center',
                       transition: 'all 0.15s ease'
@@ -819,14 +825,15 @@ export default function DeckArchitect({
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  background: isHouseRulesOpen ? 'rgba(30, 41, 59, 0.7)' : 'rgba(30, 41, 59, 0.4)',
-                  border: '1px solid var(--border-color)',
+                  background: isHouseRulesOpen ? 'var(--bg-interactive-hover)' : 'var(--bg-interactive)',
+                  border: '1.5px solid var(--border-interactive)',
                   borderRadius: isHouseRulesOpen ? '8px 8px 0 0' : '8px',
                   padding: '10px 12px',
                   cursor: 'pointer',
-                  color: 'var(--text-primary)',
+                  color: 'var(--text-white)',
                   fontSize: '0.84rem',
                   fontWeight: '600',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
                   transition: 'background 0.15s ease'
                 }}
               >
@@ -877,15 +884,16 @@ export default function DeckArchitect({
                           type="button"
                           onClick={() => toggleHouseRule(rule.id)}
                           style={{
-                            padding: '6px 10px',
+                            padding: '6px 11px',
                             borderRadius: '16px',
-                            fontSize: '0.74rem',
-                            fontWeight: isActive ? '600' : 'normal',
+                            fontSize: '0.75rem',
+                            fontWeight: isActive ? '700' : '600',
                             cursor: 'pointer',
                             transition: 'all 0.15s ease',
-                            border: isActive ? '1px solid #ef4444' : '1px solid var(--border-color)',
-                            background: isActive ? 'rgba(239, 68, 68, 0.2)' : 'rgba(30, 41, 59, 0.5)',
-                            color: isActive ? '#fca5a5' : 'var(--text-secondary)'
+                            border: isActive ? '1.5px solid #ef4444' : '1.5px solid var(--border-interactive)',
+                            background: isActive ? 'rgba(239, 68, 68, 0.28)' : 'var(--bg-interactive)',
+                            color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
                           }}
                         >
                           {rule.label}
@@ -1359,13 +1367,14 @@ export default function DeckArchitect({
                   key={tab.id}
                   onClick={() => setSelectedCategory(tab.id)}
                   style={{
-                    padding: '6px 12px',
+                    padding: '7px 14px',
                     borderRadius: '16px',
-                    border: selectedCategory === tab.id ? '1px solid var(--text-accent)' : '1px solid var(--border-color)',
-                    background: selectedCategory === tab.id ? 'var(--text-accent)' : 'var(--bg-secondary)',
-                    color: selectedCategory === tab.id ? '#0f172a' : 'var(--text-secondary)',
-                    fontWeight: selectedCategory === tab.id ? 'bold' : 'normal',
-                    fontSize: '0.78rem',
+                    border: selectedCategory === tab.id ? '1.5px solid #38bdf8' : '1.5px solid var(--border-interactive)',
+                    background: selectedCategory === tab.id ? 'linear-gradient(135deg, #c084fc, #38bdf8)' : 'var(--bg-interactive)',
+                    color: selectedCategory === tab.id ? '#0f172a' : 'var(--text-white)',
+                    fontWeight: selectedCategory === tab.id ? '800' : '600',
+                    boxShadow: selectedCategory === tab.id ? '0 0 12px rgba(56, 189, 248, 0.45)' : '0 2px 4px rgba(0,0,0,0.35)',
+                    fontSize: '0.79rem',
                     cursor: 'pointer'
                   }}
                 >
@@ -1480,23 +1489,24 @@ export default function DeckArchitect({
                               style={{
                                 marginTop: '8px',
                                 width: '100%',
-                                padding: '5px 8px',
+                                padding: '6px 10px',
                                 borderRadius: '6px',
-                                fontSize: '0.74rem',
-                                fontWeight: '600',
+                                fontSize: '0.76rem',
+                                fontWeight: '700',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                gap: '5px',
-                                background: 'rgba(168, 85, 247, 0.12)',
-                                border: '1px solid rgba(168, 85, 247, 0.35)',
-                                color: 'var(--text-accent, #bb8fdf)',
+                                gap: '6px',
+                                background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.45), rgba(56, 189, 248, 0.3))',
+                                border: '1.5px solid #a855f7',
+                                color: '#ffffff',
+                                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
                                 transition: 'all 0.15s ease'
                               }}
                               title={`Swap ${card.name} for another ${sec.title}`}
                             >
-                              <ArrowRightLeft size={12} />
+                              <ArrowRightLeft size={13} />
                               <span>Swap</span>
                             </button>
                           )}

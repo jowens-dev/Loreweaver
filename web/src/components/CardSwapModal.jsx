@@ -347,10 +347,11 @@ export default function CardSwapModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'var(--bg-input, #100522)',
-                border: '1px solid var(--border-purple, #3b2668)',
+                background: 'var(--bg-input, #0b132b)',
+                border: '1.5px solid var(--border-interactive, #7c52cc)',
                 borderRadius: '8px',
-                padding: '8px 12px'
+                padding: '9px 12px',
+                boxShadow: 'inset 0 2px 5px rgba(0, 0, 0, 0.55)'
               }}
             >
               <Search size={16} style={{ color: 'var(--text-muted, #94a3b8)' }} />

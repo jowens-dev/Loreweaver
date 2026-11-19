@@ -217,5 +217,21 @@ def test_t4_and_t5_distinct_win_cons_by_user_choice_and_prompt():
         )
         assert d_mill["preferred_win_con"] == "mill"
         assert "Ruin Crab" in {c["name"] for c in d_mill["categories"]["win_con"]}
+
+        # Falsification check: words containing 'ping' or 'mill' as substrings must NOT hijack 'combat'
+        for combat_idea in ["ramping into big green creatures", "stomping dinosaurs", "tapping and untapping permanents", "million tokens"]:
+            assert deck_builder.infer_win_con_from_idea(combat_idea, "combat") == "combat"
+
+        # Falsification check: voltron on colorless / mono-color ultra_budget must strictly maintain 100 cards (0 lands in nonland slots)
+        d_voltron_c = deck_builder.build_deck(
+            conn=conn,
+            commander_name="Traxos, Scourge of Kroog",
+            bracket=4,
+            budget="ultra_budget",
+            preferred_win_con="voltron",
+        )
+        total_cat_cards = sum(len(v) for v in d_voltron_c["categories"].values())
+        assert d_voltron_c["total_cards"] == 100
+        assert total_cat_cards == 100
     finally:
         conn.close()
