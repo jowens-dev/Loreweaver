@@ -180,3 +180,42 @@ def test_dynamic_commander_discovery():
     assert set(deck["commander"]["color_identity"]).issubset({"W", "B"})
     assert deck["total_cards"] == 100
     assert "drain" in deck["preferred_win_con"]
+
+
+def test_t4_and_t5_distinct_win_cons_by_user_choice_and_prompt():
+    """Verify T4 and T5 decks select distinct, mode-accurate win conditions for every win_con mode and prompt."""
+    conn = db.get_connection()
+    try:
+        modes = ["combat", "combo", "drain", "stax", "burn", "voltron", "mill"]
+        for br in [4, 5]:
+            for bg in ["moderate", "ultra_budget"]:
+                seen_sets = {}
+                for wc in modes:
+                    d = deck_builder.build_deck(
+                        conn=conn,
+                        commander_name="Mishra, Artificer Prodigy",
+                        bracket=br,
+                        budget=bg,
+                        preferred_win_con=wc,
+                    )
+                    wc_names = tuple(c["name"] for c in d["categories"]["win_con"])
+                    assert len(wc_names) == 4, f"Expected 4 win cons for T{br} {bg} {wc}, got {wc_names}"
+                    for prev_mode, prev_names in seen_sets.items():
+                        assert wc_names != prev_names, (
+                            f"T{br} ({bg}) win_con='{wc}' produced identical win cons to '{prev_mode}': {wc_names}"
+                        )
+                    seen_sets[wc] = wc_names
+
+        # Also verify natural-language deck_idea infers win_con when preferred_win_con is left on default 'combat'
+        d_mill = deck_builder.build_deck(
+            conn=conn,
+            commander_name="Mishra, Artificer Prodigy",
+            deck_idea="mill out all opponents libraries",
+            bracket=4,
+            budget="ultra_budget",
+            preferred_win_con="combat",
+        )
+        assert d_mill["preferred_win_con"] == "mill"
+        assert "Ruin Crab" in {c["name"] for c in d_mill["categories"]["win_con"]}
+    finally:
+        conn.close()

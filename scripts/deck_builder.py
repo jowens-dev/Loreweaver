@@ -389,12 +389,22 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Moonshaker Cavalry", "colors": {"W"}, "desc": "White Craterhoof providing flying and massive power buff."},
         {"name": "Triumph of the Hordes", "colors": {"G"}, "desc": "Mass infect and trample for one-shot combat finishes."},
         {"name": "Beastmaster Ascension", "colors": {"G"}, "desc": "+5/+5 static anthem to all creatures once counters are charged."},
+        {"name": "Overwhelming Stampede", "colors": {"G"}, "desc": "Doubles highest power across your entire board with trample."},
+        {"name": "End-Raze Forerunners", "colors": {"G"}, "desc": "Budget Craterhoof granting +2/+2, vigilance, and trample."},
         {"name": "Akroma's Will", "colors": {"W"}, "desc": "Instant-speed unblockable, double strike, and indestructible alpha strike."},
+        {"name": "True Conviction", "colors": {"W"}, "desc": "Grants double strike and lifelink to your entire team."},
+        {"name": "Shared Animosity", "colors": {"R"}, "desc": "Exponential combat power scaling for attacking creatures."},
         {"name": "Aggravated Assault", "colors": {"R"}, "desc": "Repeatable extra combat steps."},
         {"name": "Moraug, Fury of Akoum", "colors": {"R"}, "desc": "Landfall-triggered cascading combat steps."},
+        {"name": "Combat Celebrant", "colors": {"R"}, "desc": "Exert attacker triggering an extra combat phase."},
+        {"name": "Port Razer", "colors": {"R"}, "desc": "Extra combat phase for each different opponent damaged."},
+        {"name": "Karlach, Fury of Avernus", "colors": {"R"}, "desc": "First strike and extra combat phase on first attack each turn."},
         {"name": "Pathbreaker Ibex", "colors": {"G"}, "desc": "Repeated trample overrun matching highest power."},
         {"name": "Elesh Norn, Grand Cenobite", "colors": {"W"}, "desc": "Asymmetric board lock and combat swing."},
-        {"name": "Akroma's Memorial", "colors": set(), "desc": "Colorless haste, flying, and vigilance board enabler."}
+        {"name": "Akroma's Memorial", "colors": set(), "desc": "Colorless haste, flying, and vigilance board enabler."},
+        {"name": "Kappa Cannoneer", "colors": {"U"}, "desc": "Unblockable scaling artifact combat threat."},
+        {"name": "Cyberdrive Awakener", "colors": {"U"}, "desc": "Turns all noncreature artifacts into flying 4/4 attackers."},
+        {"name": "Myr Battlesphere", "colors": set(), "desc": "Creates 4 Myr tokens and attacks for massive tapped-artifact damage."}
     ],
     "drain": [
         {"name": "Blood Artist", "colors": {"B"}, "desc": "Targeted drain whenever any creature dies."},
@@ -403,9 +413,14 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Bastion of Remembrance", "colors": {"B"}, "desc": "Enchantment-based aristocrats drain protected from sweepers."},
         {"name": "Elas il-Kor, Sadistic Pilgrim", "colors": {"W", "B"}, "desc": "Deathtouch drain engine for creature death triggers."},
         {"name": "Marionette Apprentice", "colors": {"B"}, "desc": "Drains opponents on creature or artifact death."},
+        {"name": "Marionette Master", "colors": {"B"}, "desc": "Massive life loss whenever an artifact you control hits the graveyard."},
+        {"name": "Nadier's Nightblade", "colors": {"B"}, "desc": "Drains all opponents whenever a token you control leaves play."},
+        {"name": "Mirkwood Bats", "colors": {"B"}, "desc": "Drains all opponents on both token creation and token sacrifice."},
+        {"name": "Corpse Knight", "colors": {"W", "B"}, "desc": "Each opponent loses 1 life whenever another creature enters under your control."},
         {"name": "Mayhem Devil", "colors": {"B", "R"}, "desc": "Direct ping damage whenever any player sacrifices a permanent."},
         {"name": "Syr Konrad, the Grim", "colors": {"B"}, "desc": "Mass drain whenever creatures enter or leave graveyards."},
         {"name": "Bolas's Citadel", "colors": {"B"}, "desc": "Sacrifice 10 permanents to deal 10 damage to each opponent."},
+        {"name": "Gray Merchant of Asphodel", "colors": {"B"}, "desc": "Massive devotion-scaled table drain."},
         {"name": "Exsanguinate", "colors": {"B"}, "desc": "Large X-mana drain wiping all opponents simultaneously."}
     ],
     "combo": [
@@ -414,14 +429,22 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Underworld Breach", "colors": {"R"}, "desc": "Graveyard recursion loop enabling infinite storm/mana."},
         {"name": "Brain Freeze", "colors": {"U"}, "desc": "Storm finisher with Underworld Breach to mill entire table."},
         {"name": "Lion's Eye Diamond", "colors": set(), "desc": "Infinite mana catalyst with Underworld Breach."},
+        {"name": "Isochron Scepter", "colors": set(), "desc": "Imprints Dramatic Reversal for infinite mana and storm."},
+        {"name": "Dramatic Reversal", "colors": {"U"}, "desc": "Untaps all nonland permanents for infinite mana with Isochron Scepter."},
+        {"name": "Laboratory Maniac", "colors": {"U"}, "desc": "Wins the game immediately upon drawing from an empty library."},
+        {"name": "Jace, Wielder of Mysteries", "colors": {"U"}, "desc": "Self-mill planeswalker that wins when your library is empty."},
         {"name": "Heliod, Sun-Crowned", "colors": {"W"}, "desc": "Grants lifelink to Walking Ballista for infinite ping loop."},
         {"name": "Walking Ballista", "colors": set(), "desc": "Damage conduit for infinite mana or Heliod lifelink loop."},
         {"name": "Dualcaster Mage", "colors": {"R"}, "desc": "Infinite hasty copy combo with Twinflame."},
         {"name": "Twinflame", "colors": {"R"}, "desc": "Copy spell that loops infinitely with Dualcaster Mage."},
+        {"name": "Niv-Mizzet, Parun", "colors": {"U", "R"}, "desc": "One-card infinite draw/damage combo with Curiosity effects."},
+        {"name": "Curiosity", "colors": {"U"}, "desc": "Forms infinite draw/damage loop with Niv-Mizzet or Glint-Horn Buccaneer."},
         {"name": "Food Chain", "colors": {"G"}, "desc": "Infinite creature mana generator with cast-from-exile creatures."},
         {"name": "Squee, the Immortal", "colors": {"R"}, "desc": "Castable from exile to fuel infinite Food Chain mana."},
         {"name": "Kiki-Jiki, Mirror Breaker", "colors": {"R"}, "desc": "Infinite haste creature copies with Zealous Conscripts."},
         {"name": "Zealous Conscripts", "colors": {"R"}, "desc": "Untaps Kiki-Jiki on ETB for infinite attacker swarm."},
+        {"name": "Peregrine Drake", "colors": {"U"}, "desc": "Untaps 5 lands on ETB for infinite flicker mana loops."},
+        {"name": "Deadeye Navigator", "colors": {"U"}, "desc": "Soulbond flicker engine for infinite ETB mana and triggers."},
         {"name": "Exquisite Blood", "colors": {"B"}, "desc": "Infinite lifegain/damage loop with Sanguine Bond / Vito."},
         {"name": "Sanguine Bond", "colors": {"B"}, "desc": "Causes opponents to lose life whenever you gain life."}
     ],
@@ -435,10 +458,23 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Aven Mindcensor", "colors": {"W"}, "desc": "Restricts opponent library searches to top 4 cards."},
         {"name": "Trinisphere", "colors": set(), "desc": "Forces all spells to cost at least 3 mana, punishing cheap cantrips."},
         {"name": "Collector Ouphe", "colors": {"G"}, "desc": "Shuts off all activated artifact abilities and fast mana rocks."},
-        {"name": "Blood Moon", "colors": {"R"}, "desc": "Turns all nonbasic lands into Mountains, crippling greedy mana bases."}
+        {"name": "Blood Moon", "colors": {"R"}, "desc": "Turns all nonbasic lands into Mountains, crippling greedy mana bases."},
+        {"name": "Narset, Parter of Veils", "colors": {"U"}, "desc": "Shuts down opponent extra card draw while digging for lock pieces."},
+        {"name": "Notion Thief", "colors": {"U", "B"}, "desc": "Steals all extra cards opponents would draw outside their draw step."},
+        {"name": "Ashiok, Dream Render", "colors": {"U", "B"}, "desc": "Shuts off opponent library searching while exiling graveyards."},
+        {"name": "Damping Sphere", "colors": set(), "desc": "Taxes multi-spell storm turns and shuts down multi-mana lands."},
+        {"name": "Grafdigger's Cage", "colors": set(), "desc": "Prevents creatures from entering from graveyards or libraries."},
+        {"name": "Soulless Jailer", "colors": set(), "desc": "Locks out graveyard casting and noncreature spells from exile/library."},
+        {"name": "Vexing Bauble", "colors": set(), "desc": "Counters every spell cast for zero mana."},
+        {"name": "Blind Obedience", "colors": {"W"}, "desc": "Artifacts and creatures opponents control enter tapped."}
     ],
     "burn": [
         {"name": "Guttersnipe", "colors": {"R"}, "desc": "Deals 2 damage to each opponent for every instant/sorcery cast."},
+        {"name": "Fiery Inscription", "colors": {"R"}, "desc": "Enchantment Guttersnipe dealing 2 damage per instant/sorcery."},
+        {"name": "Kessig Flamebreather", "colors": {"R"}, "desc": "Pings each opponent for 1 on every noncreature spell cast."},
+        {"name": "Firebrand Archer", "colors": {"R"}, "desc": "Pings each opponent for 1 whenever you cast a noncreature spell."},
+        {"name": "Reckless Fireweaver", "colors": {"R"}, "desc": "Deals 1 damage to each opponent whenever an artifact enters under your control."},
+        {"name": "Ingenious Artillerist", "colors": {"R"}, "desc": "Deals damage equal to the number of artifacts entering under your control."},
         {"name": "Torbran, Thane of Red Fell", "colors": {"R"}, "desc": "Adds +2 damage to all red sources and burn spells."},
         {"name": "Roiling Vortex", "colors": {"R"}, "desc": "Passive upkeep burn and 5 damage penalty for free spells."},
         {"name": "Sulfuric Vortex", "colors": {"R"}, "desc": "Shuts off lifegain while dealing 2 damage each upkeep."},
@@ -451,6 +487,13 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Swiftfoot Boots", "colors": set(), "desc": "Hexproof and haste protection for the commander."},
         {"name": "Lightning Greaves", "colors": set(), "desc": "0-equip shroud and haste engine."},
         {"name": "Blackblade Reforged", "colors": set(), "desc": "Massive legendary equipment scaling power with land count."},
+        {"name": "Loxodon Warhammer", "colors": set(), "desc": "+3/+0, trample, and lifelink for commander combat damage."},
+        {"name": "Nettlecyst", "colors": set(), "desc": "Living weapon scaling +1/+1 for every artifact and enchantment you control."},
+        {"name": "Cranial Plating", "colors": {"B"}, "desc": "Instant-speed attach granting +1/+0 per artifact you control."},
+        {"name": "Two-Handed Axe // Sweeping Cleave", "colors": {"R"}, "desc": "Doubles attacking commander's power and grants double strike."},
+        {"name": "Fireshrieker", "colors": set(), "desc": "Grants double strike for lethal two-hit commander damage."},
+        {"name": "Whispersilk Cloak", "colors": set(), "desc": "Grants shroud and makes the equipped commander completely unblockable."},
+        {"name": "Rogue's Passage", "colors": set(), "desc": "Unblockable activation from the mana base."},
         {"name": "Sword of Feast and Famine", "colors": set(), "desc": "Untaps lands on combat damage and forces opponent discard."},
         {"name": "Colossus Hammer", "colors": set(), "desc": "+10/+10 power boost for lethal commander damage."},
         {"name": "Shadowspear", "colors": set(), "desc": "Trample and lifelink plus hexproof/indestructible removal."},
@@ -461,6 +504,12 @@ WIN_CON_PACKAGES: dict[str, list[dict[str, Any]]] = {
         {"name": "Maddening Cacophony", "colors": {"U"}, "desc": "Kicked spell mills half of each opponent's library."},
         {"name": "Bruvac the Grandiloquent", "colors": {"U"}, "desc": "Doubles all cards opponents mill."},
         {"name": "Ruin Crab", "colors": {"U"}, "desc": "Landfall engine milling each opponent 3 cards."},
+        {"name": "Hedron Crab", "colors": {"U"}, "desc": "1-CMC landfall crab milling target player 3 cards per land."},
+        {"name": "Fractured Sanity", "colors": {"U"}, "desc": "Each opponent mills 14 cards (or 4 with instant cycling)."},
+        {"name": "Psychic Corrosion", "colors": {"U"}, "desc": "Each opponent mills 2 cards whenever you draw a card."},
+        {"name": "Sphinx's Tutelage", "colors": {"U"}, "desc": "Repeatable mill engine triggered on every card draw."},
+        {"name": "Consuming Aberration", "colors": {"U", "B"}, "desc": "Grinds each opponent's library until they hit a land on every spell you cast."},
+        {"name": "Mind Grind", "colors": {"U", "B"}, "desc": "X-spell forcing each opponent to mill until they reveal X lands."},
         {"name": "Tasha's Hideous Laughter", "colors": {"U"}, "desc": "Exiles opponent cards until total mana value reaches 20."},
         {"name": "Syr Konrad, the Grim", "colors": {"B"}, "desc": "Converts mill into massive table-wide life loss."},
         {"name": "Laboratory Maniac", "colors": {"U"}, "desc": "Win the game when attempting to draw from an empty library."},
@@ -492,6 +541,30 @@ def resolve_color_identity(color_input: str | list[str] | set[str] | None) -> se
         elif tok in COLOR_MAP:
             colors.update(COLOR_MAP[tok])
     return colors
+
+
+def infer_win_con_from_idea(deck_idea: str, preferred_win_con: str = "combat") -> str:
+    """Infer intended win condition from natural language deck_idea prompt if user left win_con on default 'combat'."""
+    pw = (preferred_win_con or "combat").strip().lower()
+    if pw not in WIN_CON_PACKAGES:
+        pw = "combat"
+    if pw != "combat" or not deck_idea or not deck_idea.strip():
+        return pw
+
+    text = deck_idea.lower()
+    if any(k in text for k in ["mill", "empty library", "self-mill", "self mill", "lab man", "laboratory maniac"]):
+        return "mill"
+    if any(k in text for k in ["voltron", "commander damage", "cmdr damage", "equipment", "aura", "equip", "21 damage"]):
+        return "voltron"
+    if any(k in text for k in ["stax", "rule of law", "hatebear", "resource denial", "lockdown", "prison", "winter orb", "tax"]):
+        return "stax"
+    if any(k in text for k in ["infinite", "combo", "thassa", "oracle", "consultation", "breach", "brain freeze", "storm", "loop", "aetherflux"]):
+        return "combo"
+    if any(k in text for k in ["aristocrat", "drain", "sacrifice", "blood artist", "zulaport", "life loss", "lifegain"]):
+        return "drain"
+    if any(k in text for k in ["burn", "group slug", "ping", "direct damage", "guttersnipe", "torment of hailfire", "exsanguinate"]):
+        return "burn"
+    return pw
 
 
 def extract_strategy_intents(deck_idea: str, win_con: str = "") -> dict[str, Any]:
@@ -1604,7 +1677,7 @@ def build_deck(
     """Assemble a tournament-legal 100-card Commander deck meeting all constraints and synergy quotas."""
     bracket = max(1, min(5, int(bracket)))
     cfg = BRACKET_CONFIGS[bracket]
-    preferred_win_con = preferred_win_con.lower()
+    preferred_win_con = infer_win_con_from_idea(deck_idea, preferred_win_con)
     if preferred_win_con not in WIN_CON_PACKAGES:
         preferred_win_con = "combat"
 
@@ -1791,6 +1864,24 @@ def build_deck(
                 if r_card and set(r_card["color_identity"]).issubset(allowed_colors):
                     add_card(r_card, "ramp")
 
+    # 4.5. Add Win-Condition Package First (so cEDH meta staples do not steal the user's requested win_con pieces)
+    for pkg_item in WIN_CON_PACKAGES[preferred_win_con]:
+        if len(categorized["win_con"]) >= cfg["target_win_con"]:
+            break
+        if is_card_excluded(pkg_item["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
+            continue
+        if pkg_item["colors"].issubset(allowed_colors):
+            card = db.get_card_by_name(conn, pkg_item["name"])
+            if card:
+                nl = card["name"].lower()
+                if (not cfg["allow_combos"] or "no_combos" in house_rules_set) and preferred_win_con == "combo":
+                    continue
+                if (not cfg["allow_fast_mana"] or "no_fast_mana" in house_rules_set) and nl in FAST_MANA_CARDS:
+                    continue
+                if bracket <= 3 and nl in {"thassa's oracle", "demonic consultation", "underworld breach", "lion's eye diamond"}:
+                    continue
+                add_card(card, "win_con")
+
     if cfg["cedh_meta"]:
         for s_name in CEDH_STAPLES_BY_COLOR["colorless"]:
             if is_card_excluded(s_name, budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
@@ -1809,24 +1900,6 @@ def build_deck(
                     roles = classify_card_role(card)
                     role = "ramp" if "ramp" in roles else ("draw" if "draw" in roles else "removal")
                     add_card(card, role)
-
-    # 5. Add Win-Condition Package (Target win cons)
-    for pkg_item in WIN_CON_PACKAGES[preferred_win_con]:
-        if len(categorized["win_con"]) >= cfg["target_win_con"]:
-            break
-        if is_card_excluded(pkg_item["name"], budget=budget, house_rules=house_rules_set, custom_bans=custom_bans_set, bracket=bracket):
-            continue
-        if pkg_item["colors"].issubset(allowed_colors):
-            card = db.get_card_by_name(conn, pkg_item["name"])
-            if card:
-                nl = card["name"].lower()
-                if (not cfg["allow_combos"] or "no_combos" in house_rules_set) and preferred_win_con == "combo":
-                    continue
-                if (not cfg["allow_fast_mana"] or "no_fast_mana" in house_rules_set) and nl in FAST_MANA_CARDS:
-                    continue
-                if bracket <= 3 and nl in {"thassa's oracle", "demonic consultation", "underworld breach", "lion's eye diamond"}:
-                    continue
-                add_card(card, "win_con")
 
     # 6. Fill Role Quotas from Filtered Pool with Logarithmic Price Friction
     candidate_names = [c["name"] for c in filtered_pool]
@@ -1866,20 +1939,46 @@ def build_deck(
 
     # Fill Win Con quota if WIN_CON_PACKAGES fell short due to budget or custom bans
     if len(categorized["win_con"]) < cfg["target_win_con"]:
+        def matches_win_con_mode(card_obj: dict[str, Any], mode: str) -> bool:
+            ol = (card_obj.get("oracle_text") or "").lower()
+            tl = (card_obj.get("type_line") or "").lower()
+            cmc_v = float(card_obj.get("cmc") or 0.0)
+            if mode == "mill":
+                return "mill" in ol or "library into their graveyard" in ol or "cards from the top of their library" in ol
+            if mode == "voltron":
+                return "equipment" in tl or "aura" in tl or "equip" in ol or "enchant creature" in ol or "double strike" in ol
+            if mode == "stax":
+                return any(k in ol for k in ["can't cast", "costs {", "cost {", "enter tapped", "enters tapped", "each player sacrifices", "opponents can't", "more to cast"])
+            if mode == "drain":
+                return "each opponent loses" in ol or ("loses" in ol and "you gain" in ol)
+            if mode == "burn":
+                return "damage to each opponent" in ol or "damage to any target" in ol or "deals 2 damage to each" in ol
+            if mode == "combo":
+                return "win the game" in ol or "copy target" in ol or "untap all" in ol or "without paying its mana cost" in ol
+            return "trample" in ol or "extra combat" in ol or "additional combat" in ol or ("creature" in tl and cmc_v >= 5)
+
         for score, card, roles in scored_candidates:
             if len(categorized["win_con"]) >= cfg["target_win_con"]:
                 break
-            oracle_lower = (card.get("oracle_text") or "").lower()
-            cmc_val = float(card.get("cmc") or 0.0)
-            if (
-                "win_con" in roles
-                or cmc_val >= 5
-                or "trample" in oracle_lower
-                or "each opponent loses" in oracle_lower
-                or "damage to each opponent" in oracle_lower
-                or "win the game" in oracle_lower
-            ):
+            if matches_win_con_mode(card, preferred_win_con):
                 add_card(card, "win_con")
+
+        # Second-pass general finisher fallback only if archetype-specific pass still needs a slot
+        if len(categorized["win_con"]) < cfg["target_win_con"]:
+            for score, card, roles in scored_candidates:
+                if len(categorized["win_con"]) >= cfg["target_win_con"]:
+                    break
+                oracle_lower = (card.get("oracle_text") or "").lower()
+                cmc_val = float(card.get("cmc") or 0.0)
+                if (
+                    "win_con" in roles
+                    or cmc_val >= 5
+                    or "trample" in oracle_lower
+                    or "each opponent loses" in oracle_lower
+                    or "damage to each opponent" in oracle_lower
+                    or "win the game" in oracle_lower
+                ):
+                    add_card(card, "win_con")
 
     # Fill Draw quota
     for score, card, roles in scored_candidates:
